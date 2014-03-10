@@ -4,6 +4,14 @@ var TileMap = React.createClass({
         1: "#",
         0: " "
     },
+    handleTurn: function(offsetX, offsetY) {
+        var player = this.state.player;
+        player.x += offsetX;
+        player.y += offsetY;
+        this.setState({
+            player: player
+        });
+    },
     getInitialState: function() {
         var props = this.props,
             tileX = props.width/props.tileWidth,
@@ -27,7 +35,8 @@ var TileMap = React.createClass({
         while (this.props.enemies--) {
             var index = Math.floor(ROT.RNG.getUniform() * freeTiles.length);
             var key = freeTiles.splice(index, 1)[0];
-            actors[key] = "V"; // enemies
+            // @TODO: Different types of enemy.
+            actors[key] = "V";
         }
 
         var index = Math.floor(ROT.RNG.getUniform() * freeTiles.length);
@@ -40,8 +49,8 @@ var TileMap = React.createClass({
             rooms: rooms, 
             actors: actors,
             player: {
-                x: position[0]*props.tileWidth,
-                y: position[1]*props.tileHeight
+                x: parseInt(position[0]),
+                y: parseInt(position[1])
             }
         };
     },
@@ -55,7 +64,7 @@ var TileMap = React.createClass({
         var tileEntities = [];
         for (var key in tiles) {
             var parts = key.split(",");
-            var x = parts[0], y = parts[1];
+            var x = parseInt(parts[0]), y = parseInt(parts[1]);
             tileEntities.push(
                 <Entity key={"tile"+x+"-"+y}
                         width={tileWidth+"px"}
@@ -100,10 +109,15 @@ var TileMap = React.createClass({
             <div style={{fontFamily: "monospace"}}>
                 {this.renderTiles()}
 
-                <Entity key="actors" filter={false}>
+                <Entity key="actorsLayer" filter={false} ref="actorsLayer"
+                        onActionLeft={this.handleTurn.bind(this, -1, 0)}
+                        onActionRight={this.handleTurn.bind(this, 1, 0)}
+                        onActionUp={this.handleTurn.bind(this, 0, -1)}
+                        onActionDown={this.handleTurn.bind(this, 0, 1)}
+                >
                     <Entity key="player"
-                            x={player.x}
-                            y={player.y}
+                            x={player.x*props.tileWidth}
+                            y={player.y*props.tileHeight}
                             width={props.tileWidth}
                             height={props.tileHeight}
                     ><span style={{color: "yellow"}}>@</span></Entity>
@@ -111,5 +125,9 @@ var TileMap = React.createClass({
                 </Entity>
             </div>
         )
+    },
+    componentDidMount: function() {
+        // Focus on the actors layer so that it can handle inputs.
+        this.refs.actorsLayer.getDOMNode().focus();
     }
 });
