@@ -1,15 +1,23 @@
 /** @jsx React.DOM */
 var TileMap = React.createClass({
     tileset: {
-        1: "#",
-        0: " "
+        1: "#", // wall
+        0: " " // free
     },
     handleTurn: function(offsetX, offsetY) {
         var player = this.state.player;
-        player.x += offsetX;
-        player.y += offsetY;
+        var newX = player.x + offsetX;
+        var newY = player.y + offsetY;
+
+        var newKey = newX + "," + newY;
+        var tile = this.state.tiles[newKey];
+        if (!tile || tile === this.tileset[1]) { 
+            // Can't move in this direction
+            return; 
+        }
+
         this.setState({
-            player: player
+            player: {x: newX,y: newY}
         });
     },
     getInitialState: function() {
