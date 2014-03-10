@@ -4,20 +4,58 @@ var TileMap = React.createClass({
         1: "#", // wall
         0: " " // free
     },
+    isPassable: function(x, y) {
+        var key = x+","+y;
+        var tile = this.state.tiles[key];
+        return (tile && tile !== this.tileset[1]);
+    },
     handleTurn: function(offsetX, offsetY) {
         var player = this.state.player;
         var newX = player.x + offsetX;
         var newY = player.y + offsetY;
+        var actors = this.state.actors;
+        var self = this;
 
-        var newKey = newX + "," + newY;
-        var tile = this.state.tiles[newKey];
-        if (!tile || tile === this.tileset[1]) { 
+        var tiles = this.state.tiles;
+        if (!this.isPassable(newX, newY)) { 
             // Can't move in this direction
             return; 
         }
 
+        var passableCallback = function(x, y) {
+            return self.isPassable(x, y);
+        }
+        var astar = new ROT.Path.AStar(newX, newY, passableCallback, {topology:4});
+        var newActors = {};
+        for (var key in actors) {
+            var value = actors[key];
+            var parts = key.split(",");
+            var x = parts[0], y = parts[1];
+            var path = [];
+            var pathCallback = function(x, y) {
+                path.push([x, y]);
+            }
+            astar.compute(x, y, pathCallback);
+
+            path.shift(); /* remove the actor's position */
+            if (path.length == 1) {
+                // This actor is next to the player.
+                // @TODO: Solve conflict
+                newActors[key] = value;
+            } else if (path.length > 10) {
+                // @TODO: implement wander behavior
+                newActors[key] = value;
+            } else {
+                x = path[0][0];
+                y = path[0][1];
+                var newKey = x+","+y;
+                newActors[newKey] = value;
+            }
+        }
+
         this.setState({
-            player: {x: newX,y: newY}
+            player: {x: newX,y: newY},
+            actors: newActors
         });
     },
     getInitialState: function() {
@@ -50,6 +88,8 @@ var TileMap = React.createClass({
         var index = Math.floor(ROT.RNG.getUniform() * freeTiles.length);
         var key = freeTiles.splice(index, 1)[0];
         var position = key.split(",");
+        var posX = parseInt(position[0]);
+        var posY = parseInt(position[1]);
 
         return {
             tiles: tiles, 
@@ -57,8 +97,8 @@ var TileMap = React.createClass({
             rooms: rooms, 
             actors: actors,
             player: {
-                x: parseInt(position[0]),
-                y: parseInt(position[1])
+                x: posX,
+                y: posY
             }
         };
     },
