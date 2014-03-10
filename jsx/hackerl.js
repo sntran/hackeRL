@@ -1,7 +1,7 @@
 /** @jsx React.DOM */
 var HackeRL = React.createClass({
     getInitialState: function() {
-        return {scene: "menu"};
+        return {scene: "hacking"};
     },
     newGame: function() {
         this.setState({scene: "hacking"})
@@ -26,6 +26,7 @@ var HackeRL = React.createClass({
                             height={props.height}
                             tileWidth={props.tileWidth}
                             tileHeight={props.tileHeight}
+                            enemies="10"
                     >
 
                     </TileMap>

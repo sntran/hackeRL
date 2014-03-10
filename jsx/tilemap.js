@@ -1,48 +1,115 @@
 /** @jsx React.DOM */
 var TileMap = React.createClass({
-    spriteMap: {
+    tileset: {
         1: "#",
         0: " "
     },
     getInitialState: function() {
-        return {tiles: []};
-    },
-    componentDidMount: function() {
         var props = this.props,
             tileX = props.width/props.tileWidth,
             tileY = props.height/props.tileHeight,
-            maze = new ROT.Map.EllerMaze(tileX, tileY), 
-            self=this, tiles = self.state.tiles;
-        maze.create(function (x, y, value) {
-            tiles.push(value);
-            if ((x == tileX-1) && (y === tileY-1)) {
-                self.setState({tiles: tiles});
-            }
+            tiles = {}, actors = {},
+            tileset = this.tileset,
+            tileMap = new ROT.Map.Digger(tileX, tileY, {
+                roomWidth: [3, 5],
+                roomHeight: [3, 5],
+                dugPercentage: 0.5
+            });
+
+        var freeTiles = [];
+        tileMap.create(function (x, y, value) {
+            var key = x+","+y;
+            if (!value) freeTiles.push(key);
+            tiles[key] = tileset[value];
         });
+        var rooms = tileMap.getRooms();
+
+        while (this.props.enemies--) {
+            var index = Math.floor(ROT.RNG.getUniform() * freeTiles.length);
+            var key = freeTiles.splice(index, 1)[0];
+            actors[key] = "V"; // enemies
+        }
+
+        var index = Math.floor(ROT.RNG.getUniform() * freeTiles.length);
+        var key = freeTiles.splice(index, 1)[0];
+        var position = key.split(",");
+
+        return {
+            tiles: tiles, 
+            freeTiles: freeTiles, 
+            rooms: rooms, 
+            actors: actors,
+            player: {
+                x: position[0]*props.tileWidth,
+                y: position[1]*props.tileHeight
+            }
+        };
     },
-    renderTile: function(tile, idx) {
+    renderTiles: function() {
         var props = this.props,
             tileWidth = props.tileWidth,
             tileHeight = props.tileHeight,
-            tileY = props.height/tileHeight;
-        var x = Math.floor(idx/tileY), y = idx % tileY;
-        return (
-            <Entity key={"tile"+x+"-"+y}
-                    width={tileWidth+"px"}
-                    height={tileHeight+"px"}
-                    x={x*tileWidth}
-                    y={y*tileHeight}
-                    sprite="#111111"
-            >
-                <span style={{color: "#00f7fb"}}>{this.spriteMap[tile]}</span>
-            </Entity>
-        )
+            tileY = props.height/tileHeight,
+            tiles = this.state.tiles;
+
+        var tileEntities = [];
+        for (var key in tiles) {
+            var parts = key.split(",");
+            var x = parts[0], y = parts[1];
+            tileEntities.push(
+                <Entity key={"tile"+x+"-"+y}
+                        width={tileWidth+"px"}
+                        height={tileHeight+"px"}
+                        x={x*tileWidth}
+                        y={y*tileHeight}
+                        sprite="#111111"
+                >
+                    <span style={{color: "#00f7fb"}}>{tiles[key]}</span>
+                </Entity>
+            )
+        }
+        return tileEntities;
+    },
+    renderActors: function() {
+         var props = this.props,
+            tileWidth = props.tileWidth,
+            tileHeight = props.tileHeight,
+            tileY = props.height/tileHeight,
+            actors = this.state.actors;
+        var actorEntities = [];
+        for (var key in actors) {
+            var parts = key.split(",");
+            var x = parts[0], y = parts[1];
+            actorEntities.push(
+                <Entity key={"tile"+x+"-"+y}
+                        width={tileWidth+"px"}
+                        height={tileHeight+"px"}
+                        x={x*tileWidth}
+                        y={y*tileHeight}
+                        sprite="#111111"
+                >
+                    <span style={{color: "#ffffff"}}>{actors[key]}</span>
+                </Entity>
+            )
+        }
+        return actorEntities;
     },
     render: function() {
+        var state = this.state, player = state.player, props = this.props;
         return (
-            <Entity key="map">
-                {this.state.tiles.map(this.renderTile)}
-            </Entity>
+            <div style={{fontFamily: "monospace"}}>
+                {this.renderTiles()}
+
+                <Entity key="actors" filter={false}>
+                    <Entity key="player"
+                            x={player.x}
+                            y={player.y}
+                            width={props.tileWidth}
+                            height={props.tileHeight}
+                    ><span style={{color: "yellow"}}>@</span></Entity>
+                    {this.renderActors()}
+                </Entity>
+            </div>
         )
     }
 });
