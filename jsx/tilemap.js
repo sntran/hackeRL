@@ -1,4 +1,22 @@
 /** @jsx React.DOM */
+var merge = function(one, two) {
+    var result = {};
+    mergeInto(result, one);
+    mergeInto(result, two);
+    return result;
+};
+
+function mergeInto(one, two) {
+    if (two != null) {
+        for (var key in two) {
+            if (!two.hasOwnProperty(key)) {
+                continue;
+            }
+            one[key] = two[key];
+        }
+    }
+}
+
 var TileMap = React.createClass({
     tileset: {
         1: "FF", // wall
@@ -40,7 +58,7 @@ var TileMap = React.createClass({
             path.shift(); /* remove the actor's position */
             if (path.length == 1) {
                 // This actor is next to the player.
-                // @TODO: Solve conflict        
+                // @TODO: Solve conflict
                 newActors[key] = value;
 
             } else if (path.length > 10) {
@@ -64,8 +82,11 @@ var TileMap = React.createClass({
             }
         }
 
+        player.x = newX;
+        player.y = newY;
+        
         this.setState({
-            player: {x: newX,y: newY},
+            player: player,
             actors: newActors
         });
     },
@@ -116,6 +137,13 @@ var TileMap = React.createClass({
             }
         };
     },
+    componentWillMount: function() {
+        // We use the props of the entity passed as the child of this
+        // component as the player's extra props, such as HP and DMG.
+        var playerComp = this.props.children;
+        var newPlayer = merge(this.state.player, playerComp.props)
+        this.setState({player: newPlayer});
+    },
     renderTiles: function() {
         var props = this.props,
             tileWidth = props.tileWidth,
@@ -141,6 +169,22 @@ var TileMap = React.createClass({
             )
         }
         return tileEntities;
+    },
+    renderPlayer: function() {
+        var player = this.state.player, props = this.props;
+        console.log(player);
+        return React.Children.map(this.props.children, function(child) {
+            return (
+                <Entity key="player" className="player"
+                        x={player.x*props.tileWidth+3}
+                        y={player.y*props.tileHeight}
+                        width={props.tileWidth-6}
+                        height={props.tileHeight}
+                        sprite="#aaa"
+                >
+                </Entity>
+            );
+        });
     },
     renderActors: function() {
         var props = this.props,
@@ -179,14 +223,7 @@ var TileMap = React.createClass({
                         onActionUp={this.handleTurn.bind(this, 0, -1)}
                         onActionDown={this.handleTurn.bind(this, 0, 1)}
                 >
-                    <Entity key="player" className="player"
-                            x={player.x*props.tileWidth}
-                            y={player.y*props.tileHeight}
-                            width={props.tileWidth}
-                            height={props.tileHeight}
-                            sprite="#aaa"
-                    >
-                    </Entity>
+                    {this.renderPlayer()}
                     {this.renderActors()}
                 </Entity>
             </Entity>

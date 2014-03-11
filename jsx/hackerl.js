@@ -28,7 +28,11 @@ var HackeRL = React.createClass({
                             tileHeight={props.tileHeight}
                             enemies="10"
                     >
-
+                        <Entity key="player" className="player"
+                                hp={100}
+                                damage={10}
+                        >
+                        </Entity>
                     </TileMap>
                 </Entity>
             </Entity>
