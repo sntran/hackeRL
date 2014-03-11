@@ -1,14 +1,22 @@
 /** @jsx React.DOM */
+var ReactCSSTransitionGroup = React.addons.CSSTransitionGroup;
 
 var HackeRL = React.createClass({
     getInitialState: function() {
-        return {scene: "hacking", debugging: false};
+        return {scene: "menu", debugging: false};
     },
     newGame: function() {
         this.setState({scene: "hacking"})
     },
     endGame: function() {
-        this.setState({scene: "menu"})
+        this.setState({scene: "gameOver"})
+    },
+    handleCommand: function(command) {
+        switch(command) {
+            case "//ACCEPT":
+                this.newGame();
+                break;
+        }
     },
     handleTerminal: function(e) {
         var self = this;
@@ -24,15 +32,12 @@ var HackeRL = React.createClass({
         var props = this.props;
         return (
             <Entity key="game" width={this.props.width} height={this.props.height} filter={this.state.scene+"Scene"}>
-                <Entity key="menuScene" sprite="url(img/Saif-Sajiid_circuit.png) no-repeat">
-                    <Entity key="newgameBtn"
-                            type="button"
-                            width="73px"
-                            height="25px"
-                            x="209px"
-                            y="185px"
-                            onClick={this.newGame}
-                    >New Game</Entity>
+                <Entity key="menuScene">
+                    <ChatRoom mainTab="Anonymous (private)"
+                        onCommand={this.handleCommand}
+                    >
+                        Hey there, I have something interesting, wanna try?
+                    </ChatRoom>
                 </Entity>
                 <Entity key="hackingScene">
                     <TileMap width={props.width}
@@ -65,6 +70,21 @@ var HackeRL = React.createClass({
                                 border: "none"
                             }} />
                     </Entity>
+                </Entity>
+                <Entity key="gameOverScene" sprite="#111111">
+                    <Entity width="80%"
+                            height="50px"
+                            x="10%"
+                            y="10%"
+                    >Game Over</Entity>
+                    <Entity key="newgameBtn"
+                            type="button"
+                            width="73px"
+                            height="25px"
+                            x="209px"
+                            y="185px"
+                            onClick={this.newGame}
+                    >New Game</Entity>
                 </Entity>
             </Entity>
         );

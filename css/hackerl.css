@@ -9,8 +9,16 @@ body {
             animation: blink 1s infinite steps(1, start);
 }
 
-.blinking-enter-active {
-    
+.scene-enter {
+    opacity: 0.01;
+    -webkit-transition: opacity .5s ease-in;
+    -moz-transition: opacity .5s ease-in;
+    -ms-transition: opacity .5s ease-in;
+    -o-transition: opacity .5s ease-in;
+    transition: opacity .5s ease-in;
+}
+.scene-enter.scene-enter-active {
+    opacity: 1;
 }
 
 @keyframes blink {
@@ -52,4 +60,12 @@ body {
         background-color: #bbb;
         color: #000;
   }
+}
+
+.chat-room {
+    overflow: hidden;
+}
+
+.chat-entries {
+    overflow: scroll;
 }
