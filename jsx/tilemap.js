@@ -1,8 +1,8 @@
 /** @jsx React.DOM */
 var TileMap = React.createClass({
     tileset: {
-        1: "#", // wall
-        0: " " // free
+        1: "FF", // wall
+        0: "00" // free
     },
     isPassable: function(x, y) {
         var key = x+","+y;
@@ -30,21 +30,32 @@ var TileMap = React.createClass({
         for (var key in actors) {
             var value = actors[key];
             var parts = key.split(",");
-            var x = parts[0], y = parts[1];
+            var x = parseInt(parts[0]), y = parseInt(parts[1]);
             var path = [];
-            var pathCallback = function(x, y) {
-                path.push([x, y]);
+            var pathCallback = function(pathX, pathY) {
+                path.push([pathX, pathY]);
             }
             astar.compute(x, y, pathCallback);
 
             path.shift(); /* remove the actor's position */
             if (path.length == 1) {
                 // This actor is next to the player.
-                // @TODO: Solve conflict
+                // @TODO: Solve conflict        
                 newActors[key] = value;
+
             } else if (path.length > 10) {
-                // @TODO: implement wander behavior
-                newActors[key] = value;
+                var neighbors = [[-1,0], [1,0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]];
+                neighbors = neighbors.map(function(offset) {
+                    var possibleX = x+offset[0], possibleY = y+offset[1];
+                    if (self.isPassable(possibleX, possibleY)) {
+                        return (possibleX+","+possibleY);
+                    }
+                    return x+","+y;
+                });
+
+                var index = Math.floor(ROT.RNG.getUniform() * neighbors.length);
+                var newKey = neighbors.splice(index, 1)[0];
+                newActors[newKey] = value;
             } else {
                 x = path[0][0];
                 y = path[0][1];
@@ -65,24 +76,28 @@ var TileMap = React.createClass({
             tiles = {}, actors = {},
             tileset = this.tileset,
             tileMap = new ROT.Map.Digger(tileX, tileY, {
-                roomWidth: [3, 5],
-                roomHeight: [3, 5],
+                roomWidth: [5, 10],
+                roomHeight: [5, 10],
                 dugPercentage: 0.5
             });
 
-        var freeTiles = [];
-        tileMap.create(function (x, y, value) {
-            var key = x+","+y;
-            if (!value) freeTiles.push(key);
-            tiles[key] = tileset[value];
-        });
-        var rooms = tileMap.getRooms();
+        var freeTiles = [], rooms;
+        do {
+            freeTiles.length = 0;
+            tiles = {};
+            tileMap.create(function (x, y, value) {
+                var key = x+","+y;
+                if (!value) freeTiles.push(key);
+                tiles[key] = tileset[value];
+            });
+            rooms = tileMap.getRooms();
+        } while (rooms.length < 10);
 
         while (this.props.enemies--) {
             var index = Math.floor(ROT.RNG.getUniform() * freeTiles.length);
             var key = freeTiles.splice(index, 1)[0];
             // @TODO: Different types of enemy.
-            actors[key] = "V";
+            actors[key] = "XX";
         }
 
         var index = Math.floor(ROT.RNG.getUniform() * freeTiles.length);
@@ -92,8 +107,7 @@ var TileMap = React.createClass({
         var posY = parseInt(position[1]);
 
         return {
-            tiles: tiles, 
-            freeTiles: freeTiles, 
+            tiles: tiles,
             rooms: rooms, 
             actors: actors,
             player: {
@@ -113,26 +127,28 @@ var TileMap = React.createClass({
         for (var key in tiles) {
             var parts = key.split(",");
             var x = parseInt(parts[0]), y = parseInt(parts[1]);
+            var tile = tiles[key];
             tileEntities.push(
                 <Entity key={"tile"+x+"-"+y}
                         width={tileWidth+"px"}
                         height={tileHeight+"px"}
                         x={x*tileWidth}
                         y={y*tileHeight}
-                        sprite="#111111"
+                        sprite={tile == "FF"? "#00f7fb" : "#fff"}
                 >
-                    <span style={{color: "#00f7fb"}}>{tiles[key]}</span>
+                    <span style={{color: "#111111"}}>{tiles[key]}</span>
                 </Entity>
             )
         }
         return tileEntities;
     },
     renderActors: function() {
-         var props = this.props,
+        var props = this.props,
             tileWidth = props.tileWidth,
             tileHeight = props.tileHeight,
             tileY = props.height/tileHeight,
             actors = this.state.actors;
+
         var actorEntities = [];
         for (var key in actors) {
             var parts = key.split(",");
@@ -143,9 +159,9 @@ var TileMap = React.createClass({
                         height={tileHeight+"px"}
                         x={x*tileWidth}
                         y={y*tileHeight}
-                        sprite="#111111"
+                        sprite="#fff"
                 >
-                    <span style={{color: "#ffffff"}}>{actors[key]}</span>
+                    <span style={{color: "red"}}>{actors[key]}</span>
                 </Entity>
             )
         }
@@ -154,7 +170,7 @@ var TileMap = React.createClass({
     render: function() {
         var state = this.state, player = state.player, props = this.props;
         return (
-            <div style={{fontFamily: "monospace"}}>
+            <Entity key="memoryMap" sprite="#111111">
                 {this.renderTiles()}
 
                 <Entity key="actorsLayer" filter={false} ref="actorsLayer"
@@ -163,15 +179,17 @@ var TileMap = React.createClass({
                         onActionUp={this.handleTurn.bind(this, 0, -1)}
                         onActionDown={this.handleTurn.bind(this, 0, 1)}
                 >
-                    <Entity key="player"
+                    <Entity key="player" className="player"
                             x={player.x*props.tileWidth}
                             y={player.y*props.tileHeight}
                             width={props.tileWidth}
                             height={props.tileHeight}
-                    ><span style={{color: "yellow"}}>@</span></Entity>
+                            sprite="#aaa"
+                    >
+                    </Entity>
                     {this.renderActors()}
                 </Entity>
-            </div>
+            </Entity>
         )
     },
     componentDidMount: function() {

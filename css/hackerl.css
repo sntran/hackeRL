@@ -1,0 +1,55 @@
+body {
+    font-family: monospace;
+}
+
+.player {
+    -webkit-animation: blink 1s infinite steps(1, start);
+       -moz-animation: blink 1s infinite steps(1, start);
+        -ms-animation: blink 1s infinite steps(1, start);
+            animation: blink 1s infinite steps(1, start);
+}
+
+.blinking-enter-active {
+    
+}
+
+@keyframes blink {
+  0%, 100% {
+        background-color: #000;
+        color: #aaa;
+  }
+  50% {
+        background-color: #bbb; /* not #aaa because it's seem there is Google Chrome bug */
+        color: #000;
+  }
+}
+@-webkit-keyframes blink {
+  0%, 100% {
+        background-color: #000;
+        color: #aaa;
+  }
+  50% {
+        background-color: #bbb;
+        color: #000;
+  }
+}
+@-ms-keyframes blink {
+  0%, 100% {
+        background-color: #000;
+        color: #aaa;
+  }
+  50% {
+        background-color: #bbb;
+        color: #000;
+  }
+}
+@-moz-keyframes blink {
+  0%, 100% {
+        background-color: #000;
+        color: #aaa;
+  }
+  50% {
+        background-color: #bbb;
+        color: #000;
+  }
+}
