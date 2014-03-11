@@ -1,10 +1,20 @@
 /** @jsx React.DOM */
+
 var HackeRL = React.createClass({
     getInitialState: function() {
-        return {scene: "hacking"};
+        return {scene: "hacking", debugging: false};
     },
     newGame: function() {
         this.setState({scene: "hacking"})
+    },
+    handleTerminal: function(e) {
+        var self = this;
+        this.setState({debugging: !this.state.debugging}, function() {
+            if (self.state.debugging) {
+                var input = self.refs.shell.getDOMNode();
+                input.focus();
+            }
+        });
     },
     render: function() {
         var account = this.state.account;
@@ -27,6 +37,7 @@ var HackeRL = React.createClass({
                             tileWidth={props.tileWidth}
                             tileHeight={props.tileHeight}
                             enemies="10"
+                            onDebug={this.handleTerminal}
                     >
                         <Entity key="player" className="player"
                                 hp={100}
@@ -34,6 +45,22 @@ var HackeRL = React.createClass({
                         >
                         </Entity>
                     </TileMap>
+
+                    <Entity key="terminal" ref="terminal"
+                            height="30%"
+                            hidden={!this.state.debugging}
+                            sprite="#111111"
+                    >
+                        <input type="text" ref="shell"
+                            style={{
+                                position: "relative",
+                                top: "85%",
+                                width: "100%",
+                                color: "#fff",
+                                backgroundColor: "#111111",
+                                border: "none"
+                            }} />
+                    </Entity>
                 </Entity>
             </Entity>
         );
@@ -41,6 +68,8 @@ var HackeRL = React.createClass({
 });
 
 var tileWidth=16, tileHeight=16;
+
+HackeRL.DEBUG = false;
 
 React.renderComponent(
     <HackeRL width={tileWidth*50} height={tileHeight*30} 

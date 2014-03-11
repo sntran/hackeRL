@@ -84,6 +84,7 @@ var Entity = React.createClass({
             z: 0,
             width: "100%",
             height: "100%",
+            hidden: false,
             background: "none",
             actions: {
                 "37": "Left",
@@ -91,7 +92,8 @@ var Entity = React.createClass({
                 "38": "Up",
                 "40": "Down",
                 "5": "Action",
-                "6": "Cancel"
+                "27": "Cancel",
+                "192": "Debug"
             },
             behaviors: []
         }
@@ -119,6 +121,7 @@ var Entity = React.createClass({
             zIndex: this.props.z,
             width: this.props.width,
             height: this.props.height,
+            display: this.props.hidden? "none" : "inherit",
             background: this.props.sprite,
             backgroundSize: "100%"
         };

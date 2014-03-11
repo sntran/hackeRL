@@ -17,38 +17,50 @@ function mergeInto(one, two) {
     }
 }
 
+function key2pos(key) {
+    var pos = key.split(",");
+    return {x: parseInt(pos[0]), y: parseInt(pos[1])};
+}
+function pos2key(x, y) {
+    return x+","+y;
+}
+
 var TileMap = React.createClass({
     tileset: {
         1: "FF", // wall
         0: "00" // free
     },
     isPassable: function(x, y) {
-        var key = x+","+y;
+        var key = pos2key(x, y);
         var tile = this.state.tiles[key];
         return (tile && tile !== this.tileset[1]);
     },
     handleTurn: function(offsetX, offsetY) {
         var player = this.state.player;
-        var newX = player.x + offsetX;
-        var newY = player.y + offsetY;
+        var freeTiles = this.state.freeTiles;
+        var oldPlayerX = player.x;
+        var oldPlayerY = player.y;
+        var newPlayerX = oldPlayerX + offsetX;
+        var newPlayerY = oldPlayerY + offsetY;
         var actors = this.state.actors;
         var self = this;
 
         var tiles = this.state.tiles;
-        if (!this.isPassable(newX, newY)) { 
+        if (!this.isPassable(newPlayerX, newPlayerY)) { 
             // Can't move in this direction
             return; 
         }
+        freeTiles.push(pos2key(oldPlayerX, oldPlayerY));// Release the tile the player was on.
 
         var passableCallback = function(x, y) {
             return self.isPassable(x, y);
         }
-        var astar = new ROT.Path.AStar(newX, newY, passableCallback, {topology:4});
+        var astar = new ROT.Path.AStar(newPlayerX, newPlayerY, passableCallback, {topology:4});
         var newActors = {};
         for (var key in actors) {
             var value = actors[key];
-            var parts = key.split(",");
-            var x = parseInt(parts[0]), y = parseInt(parts[1]);
+            var parts = key2pos(key)
+            var x = parts.x, y = parts.y;
             var path = [];
             var pathCallback = function(pathX, pathY) {
                 path.push([pathX, pathY]);
@@ -66,28 +78,38 @@ var TileMap = React.createClass({
                 neighbors = neighbors.map(function(offset) {
                     var possibleX = x+offset[0], possibleY = y+offset[1];
                     if (self.isPassable(possibleX, possibleY)) {
-                        return (possibleX+","+possibleY);
+                        return pos2key(possibleX, possibleY);
                     }
-                    return x+","+y;
+                    return pos2key(x, y);
                 });
 
                 var index = Math.floor(ROT.RNG.getUniform() * neighbors.length);
                 var newKey = neighbors.splice(index, 1)[0];
                 newActors[newKey] = value;
+                freeTiles.push(key); // Release the tile the actor was on.
             } else {
                 x = path[0][0];
                 y = path[0][1];
-                var newKey = x+","+y;
+                var newKey = pos2key(x, y);
                 newActors[newKey] = value;
+                freeTiles.push(key); // Release the tile the actor was on.
             }
         }
 
-        player.x = newX;
-        player.y = newY;
-        
+        player.x = newPlayerX;
+        player.y = newPlayerY;
+
+        // Remove the tiles the player and actors are on.
+        freeTiles = freeTiles.filter(function (oldFreeTileKey, idx) {
+            var isPlayer = oldFreeTileKey === pos2key(newPlayerX, newPlayerY);
+            var isActor = (oldFreeTileKey in newActors);
+            return (!isPlayer && !isActor);
+        });
+
         this.setState({
             player: player,
-            actors: newActors
+            actors: newActors,
+            freeTiles: freeTiles
         });
     },
     getInitialState: function() {
@@ -129,6 +151,7 @@ var TileMap = React.createClass({
 
         return {
             tiles: tiles,
+            freeTiles: freeTiles,
             rooms: rooms, 
             actors: actors,
             player: {
@@ -156,29 +179,30 @@ var TileMap = React.createClass({
             var parts = key.split(",");
             var x = parseInt(parts[0]), y = parseInt(parts[1]);
             var tile = tiles[key];
+            var color = (tile=="FF")? "#00f7fb" : (HackeRL.DEBUG? "green": "#fff");
             tileEntities.push(
                 <Entity key={"tile"+x+"-"+y}
                         width={tileWidth+"px"}
                         height={tileHeight+"px"}
                         x={x*tileWidth}
                         y={y*tileHeight}
-                        sprite={tile == "FF"? "#00f7fb" : "#fff"}
+                        sprite={color}
                 >
                     <span style={{color: "#111111"}}>{tiles[key]}</span>
                 </Entity>
             )
         }
+
         return tileEntities;
     },
     renderPlayer: function() {
         var player = this.state.player, props = this.props;
-        console.log(player);
         return React.Children.map(this.props.children, function(child) {
             return (
                 <Entity key="player" className="player"
-                        x={player.x*props.tileWidth+3}
+                        x={player.x*props.tileWidth}
                         y={player.y*props.tileHeight}
-                        width={props.tileWidth-6}
+                        width={props.tileWidth}
                         height={props.tileHeight}
                         sprite="#aaa"
                 >
@@ -198,7 +222,7 @@ var TileMap = React.createClass({
             var parts = key.split(",");
             var x = parts[0], y = parts[1];
             actorEntities.push(
-                <Entity key={"tile"+x+"-"+y}
+                <Entity key={"actor"+x+"-"+y}
                         width={tileWidth+"px"}
                         height={tileHeight+"px"}
                         x={x*tileWidth}
@@ -222,6 +246,7 @@ var TileMap = React.createClass({
                         onActionRight={this.handleTurn.bind(this, 1, 0)}
                         onActionUp={this.handleTurn.bind(this, 0, -1)}
                         onActionDown={this.handleTurn.bind(this, 0, 1)}
+                        onActionDebug={props.onDebug}
                 >
                     {this.renderPlayer()}
                     {this.renderActors()}
