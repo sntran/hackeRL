@@ -7,6 +7,9 @@ var HackeRL = React.createClass({
     newGame: function() {
         this.setState({scene: "hacking"})
     },
+    endGame: function() {
+        this.setState({scene: "menu"})
+    },
     handleTerminal: function(e) {
         var self = this;
         this.setState({debugging: !this.state.debugging}, function() {
@@ -38,10 +41,11 @@ var HackeRL = React.createClass({
                             tileHeight={props.tileHeight}
                             enemies="10"
                             onDebug={this.handleTerminal}
+                            gameOver={this.endGame}
                     >
                         <Entity key="player" className="player"
-                                hp={100}
-                                damage={10}
+                                hp={15}
+                                damage={1}
                         >
                         </Entity>
                     </TileMap>

@@ -25,6 +25,27 @@ function pos2key(x, y) {
     return x+","+y;
 }
 
+var ActorTemplates = {
+    "☠": {
+        hp: 3,
+        damage: 1
+    },
+    "☣": {
+        hp: 5,
+        damage: 2
+    },
+    "[]": {
+        hp: 10,
+        damage: 5
+    }
+}
+
+var Actor = function(type) {
+    this.type = type;
+    this.hp = ActorTemplates[type].hp;
+    this.damage = ActorTemplates[type].damage;
+}
+
 var TileMap = React.createClass({
     tileset: {
         1: "FF", // wall
@@ -50,7 +71,6 @@ var TileMap = React.createClass({
             // Can't move in this direction
             return; 
         }
-        freeTiles.push(pos2key(oldPlayerX, oldPlayerY));// Release the tile the player was on.
 
         var passableCallback = function(x, y) {
             return self.isPassable(x, y);
@@ -58,7 +78,7 @@ var TileMap = React.createClass({
         var astar = new ROT.Path.AStar(newPlayerX, newPlayerY, passableCallback, {topology:4});
         var newActors = {};
         for (var key in actors) {
-            var value = actors[key];
+            var actor = actors[key];
             var parts = key2pos(key)
             var x = parts.x, y = parts.y;
             var path = [];
@@ -68,11 +88,22 @@ var TileMap = React.createClass({
             astar.compute(x, y, pathCallback);
 
             path.shift(); /* remove the actor's position */
-            if (path.length == 1) {
+            if (path.length == 0 || path.length == 1) {
                 // This actor is next to the player.
-                // @TODO: Solve conflict
-                newActors[key] = value;
+                if (pos2key(newPlayerX, newPlayerY) === key) {
+                    // Don't move the player
+                    newPlayerY = oldPlayerX;
+                    newPlayerY = oldPlayerY;
+                    player.hp -= actor.damage;
+                    actor.hp -= player.damage
+                }
 
+                if (player.hp <= 0) {
+                    self.props.gameOver();
+                }
+                if (actor.hp > 0) {
+                    newActors[key] = actor;
+                }
             } else if (path.length > 10) {
                 var neighbors = [[-1,0], [1,0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]];
                 neighbors = neighbors.map(function(offset) {
@@ -85,19 +116,20 @@ var TileMap = React.createClass({
 
                 var index = Math.floor(ROT.RNG.getUniform() * neighbors.length);
                 var newKey = neighbors.splice(index, 1)[0];
-                newActors[newKey] = value;
+                newActors[newKey] = actor;
                 freeTiles.push(key); // Release the tile the actor was on.
             } else {
                 x = path[0][0];
                 y = path[0][1];
                 var newKey = pos2key(x, y);
-                newActors[newKey] = value;
+                newActors[newKey] = actor;
                 freeTiles.push(key); // Release the tile the actor was on.
             }
         }
 
         player.x = newPlayerX;
         player.y = newPlayerY;
+        freeTiles.push(pos2key(oldPlayerX, oldPlayerY));// Release the tile the player was on.
 
         // Remove the tiles the player and actors are on.
         freeTiles = freeTiles.filter(function (oldFreeTileKey, idx) {
@@ -140,7 +172,9 @@ var TileMap = React.createClass({
             var index = Math.floor(ROT.RNG.getUniform() * freeTiles.length);
             var key = freeTiles.splice(index, 1)[0];
             // @TODO: Different types of enemy.
-            actors[key] = "XX";
+            var types = Object.keys(ActorTemplates);
+            index = Math.floor(ROT.RNG.getUniform() * types.length);
+            actors[key] = new Actor(types[index]);
         }
 
         var index = Math.floor(ROT.RNG.getUniform() * freeTiles.length);
@@ -229,7 +263,7 @@ var TileMap = React.createClass({
                         y={y*tileHeight}
                         sprite="#fff"
                 >
-                    <span style={{color: "red"}}>{actors[key]}</span>
+                    <span style={{color: "red"}}>{actors[key].type}</span>
                 </Entity>
             )
         }
