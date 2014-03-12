@@ -1,4 +1,5 @@
 /** @jsx React.DOM */
+var MAX_USERS = 30;
 var ChatRoom = React.createClass({
     getInitialState: function () {
         this.sg = new ROT.StringGenerator();
@@ -6,7 +7,7 @@ var ChatRoom = React.createClass({
         while (trainingSetCount--) {
             this.sg.observe(nicknames[trainingSetCount]);
         }
-        var userCount = 10+Math.floor(ROT.RNG.getUniform() * 30)
+        var userCount = 10+Math.floor(ROT.RNG.getUniform() * MAX_USERS)
         var users = [];
         while (userCount--) {
             users.push(this.sg.generate());
@@ -15,21 +16,37 @@ var ChatRoom = React.createClass({
         this.userUpdater = window.setTimeout(this.updateUsers, Math.floor(ROT.RNG.getUniform() * 10)*1000);
 
         return {
-            activeTab: "Welcome",
+            activeTab: 0,
             users: users
         }
     },
     componentWillUnmount: function() {
         window.clearTimeout(this.userUpdater);
     },
+    getActiveTabName: function() {
+        return this.props.children[this.state.activeTab].props.key;
+    },
+    componentDidUpdate: function() {
+        // To scroll the chat entries
+        var activeTabName = this.getActiveTabName();
+        var ref = this.refs["messages-"+activeTabName];
+        if (ref) {
+            var activeTabMessages = ref.getDOMNode();
+            activeTabMessages.scrollTop = activeTabMessages.scrollHeight;
+        }
+    },
     sendChat: function(e) {
         if (e.which === 13) {
             var chatInput = this.refs.chatSender.getDOMNode();
             var chatLine = chatInput.value;
+            if (chatLine === "") return;
             chatInput.value = "";
             var matches = chatLine.match(/^\/([a-zA-Z]+)(?:\s(.*))?$/);
             if (matches) {
-                this.props.onCommand(matches);
+                this.props.onChatMessage(matches);
+            } else {
+                var activeTabName = this.getActiveTabName();
+                this.props.onChatMessage([chatLine, "reply", chatLine])
             }
         }
     },
@@ -40,23 +57,19 @@ var ChatRoom = React.createClass({
             var index = Math.floor(ROT.RNG.getUniform() * users.length);
             users.splice(index, 1);
         }
-        var usersToAdd = Math.floor(ROT.RNG.getUniform() * 10);
+        var usersToAdd = Math.floor(ROT.RNG.getUniform() * (MAX_USERS-users.length));
         while (usersToAdd--) {
             users.push(this.sg.generate());
         }
-        index = Math.floor(ROT.RNG.getUniform() * users.length);
-        // Inject the agent to the list of users.
-        // @TODO: Avoid hard-coding the tab position of the agent.
-        users.splice(index, 0, this.props.children[1].props.key);
         this.userUpdater = window.setTimeout(this.updateUsers, Math.floor(ROT.RNG.getUniform() * 5)*1000);
         this.setState({users: users});
     },
-    switchTab: function(name) {
-        this.setState({activeTab: name})
+    switchTab: function(idx, name) {
+        this.setState({activeTab: idx})
     },
     renderRoom: function(child) {
         return (
-            <Entity key={child.props.key} className="chat-entries" width="70%">
+            <Entity key={child.props.key} ref={"messages-"+child.props.key} className="chat-entries" width="70%">
                 {child.props.children}
             </Entity>
         )
@@ -64,7 +77,7 @@ var ChatRoom = React.createClass({
     render: function() {
         var users = this.state.users.map(function (name, i) {
             return (
-                <li onClick={this.switchTab.bind(this, name)}>{name}</li>
+                <li key={"user"+i} onClick={this.switchTab.bind(this, name)}>{name}</li>
             )
         }.bind(this));
 
@@ -73,8 +86,8 @@ var ChatRoom = React.createClass({
             if (!tabName) return false;
             return (
                 <Entity key={tabName+"Tab"} x={100*i+"px"} width="100px" className="tab"
-                        onClick={this.switchTab.bind(this, tabName)}
-                        sprite={tabName===this.state.activeTab? "grey" : "#fff"}
+                        onClick={this.switchTab.bind(this, i, tabName)}
+                        sprite={tabName===this.getActiveTabName()? "grey" : "#fff"}
                     >{tabName}</Entity>
             )
         }.bind(this));
@@ -88,7 +101,7 @@ var ChatRoom = React.createClass({
 
                 <Entity key="room" className="chat-room"
                          y="5%" height="95%"
-                         filter={this.state.activeTab}
+                         filter={this.getActiveTabName()}
                 >
                     {this.props.children.map(this.renderRoom)}
                 </Entity>

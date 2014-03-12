@@ -12,7 +12,7 @@ var logo = "\n"+
 "|__/  |__/|  $$\________/  \_______/|__/  \__/ \_______/|__/  |__/|________/\n"+
 "           \  $$$   /$$$                                                    \n"+
 "            \_  $$$$$$_/                                                    \n"+
-"              \______/  v0.7.3                                              \n"+
+"              \______/  v0.7.8                                              \n"+
 "\n";
 
 var messages = {
@@ -50,10 +50,14 @@ var HackeRL = React.createClass({
             agent: false,
             debugging: false,
             scene: "menu", 
-            messageOfTheDay: "",
             systemMessages: [
                 logo,
                 "== Connected to server.",
+                "== Changes log:",
+                "== * Fixed users list not to become too many.",
+                "== * Fixed sending empty message.",
+                "== * Support arbitrary chat message.",
+                "== * Scroll to bottom of messages list.",
                 "== -",
                 "== - Welcome to h@ckeRL " + nickname + ".",
                 "== You were assigned an auto-generated nickname. Please register a new nickname via /nick newnickname, or identify via /msg NickServ identify <password>."
@@ -93,7 +97,7 @@ var HackeRL = React.createClass({
             case "info":
             case "details":
                 var dialog = this.state.dialog;
-                dialog.push(messages[commandType]);
+                dialog.push(this.state.agent + ": " +messages[commandType]);
                 this.setState({dialog: dialog});
                 break;
             case "connect":
@@ -101,6 +105,11 @@ var HackeRL = React.createClass({
                 // @TODO: Random IP
                 // @TODO: Validate input with instruction.
                 this.newGame();
+                break;
+            case "reply":
+                var dialog = this.state.dialog;
+                dialog.push(this.state.nickname + ": " + args[0]);
+                this.setState({dialog: dialog});
                 break;
         }
     },
@@ -118,19 +127,19 @@ var HackeRL = React.createClass({
         var props = this.props;
         var systemMessages = this.state.systemMessages.map(function (msg, i) {
             if (i===0) {
-                return <pre>{msg}</pre>;
+                return <pre key="logo">{msg}</pre>;
             } else {
                 var commands = msg.match(/(\/[a-zA-Z<>\s]+)(?=\.|\,)/g);
-                return <p>{getTime() + " " + msg}</p>
+                return <p key={"message-"+i}>{getTime() + " " + msg}</p>
             }
         });
         var dialog = this.state.dialog.map(function (msg, i) {
-            return <p>{getTime() + " " + this.state.agent + ": " + msg}</p>
+            return <p key={"message-"+i}>{getTime() + " " + msg}</p>
         }.bind(this));
         return (
             <Entity key="game" width={this.props.width} height={this.props.height} filter={this.state.scene+"Scene"}>
                 <Entity key="menuScene">
-                    <ChatRoom onCommand={this.handleCommand}>
+                    <ChatRoom onChatMessage={this.handleCommand}>
                         <Entity key="Welcome">
                             {systemMessages}
                         </Entity>
@@ -173,7 +182,7 @@ var HackeRL = React.createClass({
                     </Entity>
                 </Entity>
                 <Entity key="gameOverScene" sprite="#111111">
-                    <Entity width="80%"
+                    <Entity key="text" width="80%"
                             height="50px"
                             x="10%"
                             y="10%"
