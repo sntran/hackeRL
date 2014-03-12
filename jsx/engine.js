@@ -91,6 +91,10 @@ var Entity = React.createClass({
                 "39": "Right",
                 "38": "Up",
                 "40": "Down",
+                "65": "Left",
+                "68": "Right",
+                "87": "Up",
+                "83": "Down",
                 "5": "Action",
                 "27": "Cancel",
                 "192": "Debug"

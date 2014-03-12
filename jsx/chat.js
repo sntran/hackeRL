@@ -13,11 +13,10 @@ var ChatRoom = React.createClass({
         }
 
         this.userUpdater = window.setTimeout(this.updateUsers, Math.floor(ROT.RNG.getUniform() * 10)*1000);
-        var messages = [this.props.children];
+
         return {
-            tabs: ["Lobby", this.props.mainTab],
-            users: users,
-            messages: messages
+            activeTab: "Welcome",
+            users: users
         }
     },
     componentWillUnmount: function() {
@@ -26,17 +25,12 @@ var ChatRoom = React.createClass({
     sendChat: function(e) {
         if (e.which === 13) {
             var chatInput = this.refs.chatSender.getDOMNode();
-            var messagesNode = this.refs.messages.getDOMNode()
             var chatLine = chatInput.value;
             chatInput.value = "";
-            var messages = this.state.messages;
-            messages.push("Me: "+chatLine);
-            if (/^\/\/[A-Z]+/.test(chatLine)) {
-                this.props.onCommand(chatLine);
+            var matches = chatLine.match(/^\/([a-zA-Z]+)(?:\s(.*))?$/);
+            if (matches) {
+                this.props.onCommand(matches);
             }
-            this.setState({messages: messages}, function() {
-                messagesNode.scrollTop = messagesNode.scrollHeight;
-            });
         }
     },
     updateUsers: function() {
@@ -54,7 +48,14 @@ var ChatRoom = React.createClass({
         this.setState({users: users});
     },
     switchTab: function(name) {
-        console.log(name);
+        this.setState({activeTab: name})
+    },
+    renderRoom: function(child) {
+        return (
+            <Entity key={child.props.key} className="chat-entries" width="70%">
+                {child.props.children}
+            </Entity>
+        )
     },
     render: function() {
         var users = this.state.users.map(function (name, i) {
@@ -62,16 +63,14 @@ var ChatRoom = React.createClass({
                 <li onClick={this.switchTab.bind(this, name)}>{name}</li>
             )
         }.bind(this));
-        var messages = this.state.messages.map(function (text, i) {
-            return (
-                <li>{text}</li>
-            )
-        }.bind(this));
 
-        var tabs = this.state.tabs.map(function (tabName, i) {
+        var tabs = this.props.children.map(function (child, i) {
+            var tabName = child.props.key;
+            if (!tabName) return false;
             return (
-                <Entity key={tabName+"Tab"} x={100*i+"px"} width="100px"
+                <Entity key={tabName+"Tab"} x={100*i+"px"} width="100px" className="tab"
                         onClick={this.switchTab.bind(this, tabName)}
+                        sprite={tabName===this.state.activeTab? "grey" : "#fff"}
                     >{tabName}</Entity>
             )
         }.bind(this));
@@ -79,26 +78,27 @@ var ChatRoom = React.createClass({
         return (
             <Entity key="chatroom"
             >
-                <Entity key="tabs" height="10%">
+                <Entity key="tabs" height="5%">
                     {tabs}
                 </Entity>
 
-                <Entity key="room" y="10%" height="90%" className="chat-room"
+                <Entity key="room" className="chat-room"
+                         y="5%" height="95%"
+                         filter={this.state.activeTab}
                 >
-                    <Entity key="messages" ref="messages" className="chat-entries" width="70%" type="ul"
-                    >{messages}</Entity>
-                    <Entity key="users" x="70%" width="30%" type="ul"
-                    >{users}</Entity>
-                    <input type="text"
-                            ref="chatSender"
-                            style={{
-                                position: "absolute",
-                                bottom:"0",
-                                width:"70%"
-                            }}
-                            onKeyPress={this.sendChat}
-                    />
+                    {this.props.children.map(this.renderRoom)}
                 </Entity>
+                <Entity key="users" x="70%" width="30%" type="ul"
+                >{users}</Entity>
+                <input type="text"
+                        ref="chatSender"
+                        style={{
+                            position: "absolute",
+                            bottom:"0",
+                            width:"70%"
+                        }}
+                        onKeyPress={this.sendChat}
+                />
             </Entity>
         )
     }

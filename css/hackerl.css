@@ -62,10 +62,18 @@ body {
   }
 }
 
+ul {
+    list-style-position: inside;
+}
+
 .chat-room {
     overflow: hidden;
 }
 
 .chat-entries {
     overflow: scroll;
+}
+
+.tab {
+    cursor: pointer;
 }
