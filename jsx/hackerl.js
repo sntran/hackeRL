@@ -12,12 +12,12 @@ var logo = "\n"+
 "|__/  |__/|  $$\________/  \_______/|__/  \__/ \_______/|__/  |__/|________/\n"+
 "           \  $$$   /$$$                                                    \n"+
 "            \_  $$$$$$_/                                                    \n"+
-"              \______/  v0.7.8                                              \n"+
+"              \______/  v0.7.10                                             \n"+
 "\n";
 
 var messages = {
     "info": "Okay, I hacked into a server, and have access to its memory. I need you to find some file in there. Are you up for it? Type /details for the server's info. ",
-    "details": "Server IP: 93.184.216.119. Username: admin. Password: foobar."
+    "details": "Server IP: "+randomIP()+". Username: admin. Password: foobar. /connect to it."
 }
 
 function getTime() {
@@ -42,6 +42,13 @@ function uuid() {
     return uuid;
 }
 
+function randomIP() {
+    return Math.round(Math.random()*255)
+    + "." + Math.round(Math.random()*255)
+    + "." + Math.round(Math.random()*255)
+    + "." + Math.round(Math.random()*255);
+}
+
 var HackeRL = React.createClass({
     getInitialState: function() {
         var nickname = "anonymous-"+uuid().slice(0, 8);
@@ -54,10 +61,8 @@ var HackeRL = React.createClass({
                 logo,
                 "== Connected to server.",
                 "== Changes log:",
-                "== * Fixed users list not to become too many.",
-                "== * Fixed sending empty message.",
-                "== * Support arbitrary chat message.",
-                "== * Scroll to bottom of messages list.",
+                "== * Use chat room as gameover scene, with messages from the agent.",
+                "== * Generate random IP instead whenever new agent contacts",
                 "== -",
                 "== - Welcome to h@ckeRL " + nickname + ".",
                 "== You were assigned an auto-generated nickname. Please register a new nickname via /nick newnickname, or identify via /msg NickServ identify <password>."
@@ -69,14 +74,30 @@ var HackeRL = React.createClass({
     },
     componentDidMount: function() {
         window.setTimeout(function() {
-            this.setState({agent: "anonymous-"+uuid().slice(0, 8)})
+            var agent = "anonymous-"+uuid().slice(0, 8);
+            this.setState({agent: agent});
         }.bind(this), 2000);
     },
     newGame: function() {
         this.setState({scene: "hacking"})
     },
-    endGame: function() {
-        this.setState({scene: "gameOver"})
+    endGame: function(stats) {
+        var dialog = this.state.dialog, systemMessages = this.state.systemMessages;
+        var agentLastMsg = "Well, I'm disappointed. Luckily for you I could just destroy the VM so nobody can trace you, but you'll need to practice your skills. Bye.";
+        dialog.push(agentLastMsg);
+        var agentQuitMsg = "== " + this.state.agent + " disconnected.";
+        dialog.push(agentQuitMsg);
+
+        systemMessages.push("== Private messages left for you from " + this.state.agent +": "+agentLastMsg);
+        systemMessages.push(agentQuitMsg);
+        this.setState({scene: "menu", dialog: dialog, systemMessages: systemMessages, agent: false});
+
+        window.setTimeout(function() {
+            // Generate a new agent with the same first dialog message.
+            var agent = "anonymous-"+uuid().slice(0, 8);
+            var dialog = [this.state.dialog[0]];
+            this.setState({agent: agent, dialog: dialog});
+        }.bind(this), 2000);
     },
     handleCommand: function(command) {
         var fullCommand = command[0], commandType = command[1], args = command[2] && command[2].split(" ");
@@ -102,7 +123,6 @@ var HackeRL = React.createClass({
                 break;
             case "connect":
                 var ip = args[0], username = args[1], password = args[2];
-                // @TODO: Random IP
                 // @TODO: Validate input with instruction.
                 this.newGame();
                 break;
@@ -180,21 +200,6 @@ var HackeRL = React.createClass({
                                 border: "none"
                             }} />
                     </Entity>
-                </Entity>
-                <Entity key="gameOverScene" sprite="#111111">
-                    <Entity key="text" width="80%"
-                            height="50px"
-                            x="10%"
-                            y="10%"
-                    >Game Over</Entity>
-                    <Entity key="newgameBtn"
-                            type="button"
-                            width="73px"
-                            height="25px"
-                            x="209px"
-                            y="185px"
-                            onClick={this.newGame}
-                    >New Game</Entity>
                 </Entity>
             </Entity>
         );
