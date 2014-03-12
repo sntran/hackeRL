@@ -44,6 +44,10 @@ var ChatRoom = React.createClass({
         while (usersToAdd--) {
             users.push(this.sg.generate());
         }
+        index = Math.floor(ROT.RNG.getUniform() * users.length);
+        // Inject the agent to the list of users.
+        // @TODO: Avoid hard-coding the tab position of the agent.
+        users.splice(index, 0, this.props.children[1].props.key);
         this.userUpdater = window.setTimeout(this.updateUsers, Math.floor(ROT.RNG.getUniform() * 5)*1000);
         this.setState({users: users});
     },
