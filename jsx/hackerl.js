@@ -12,12 +12,43 @@ var logo = "\n"+
 "|__/  |__/|  $$\________/  \_______/|__/  \__/ \_______/|__/  |__/|________/\n"+
 "           \  $$$   /$$$                                                    \n"+
 "            \_  $$$$$$_/                                                    \n"+
-"              \______/  v0.7.10                                             \n"+
+"              \______/  v0.8.0                                              \n"+
 "\n";
 
-var messages = {
+var CONSTANTS = {};
+CONSTANTS.OSes = ["Linux", "Mac OS X", "Windows"];
+CONSTANTS.specs = [
+    {
+        cpu: {name: "Dual core 1.5GHz", attribute: 1.5},
+        mem: {name: "2GB RAM", attribute: 2},
+        hdd: {name: "40GB HDD", attribute: "40HDD"}
+    },
+    {
+        cpu: {name: "I3 1.86GHz", attribute: 1.86},
+        mem: {name: "2GB RAM", attribute: 2},
+        hdd: {name: "80GB HDD", attribute: "80HDD"}
+    },
+    {
+        cpu: {name: "I5 2.1GHz", attribute: 2.1},
+        mem: {name: "4GB RAM", attribute: 4},
+        hdd: {name: "40GB SSD", attribute: "40SSD"}
+    }
+];
+CONSTANTS.messages = {
+    "intro": "Hey there, I have something interesting, wanna try? Type /info for more detail.",
     "info": "Okay, I hacked into a server, and have access to its memory. I need you to find some file in there. Are you up for it? Type /details for the server's info. ",
-    "details": "Server IP: "+randomIP()+". Username: admin. Password: foobar. /connect to it."
+    "details": "Server IP: {serverIP}. Username: {username}. Password: {password}.",
+    "OSSelection": "I still could not detect your OS. What is it again?<br />"
+                    +"1. Linux.<br />2. Mac OS X.<br />3. Linux.<br />4. I'm not sure?",
+    "OSInfo": "Linux is free to install. It's fast, but you have to type command for everything. Tools running on Linux has high compatibility between Linux versions.<br/><br/>"+
+            "Windows, on the other hand, requires a license to run. It's bloated with junks so everything is slow. It has UI though, so every thing is point and click. Certain softwares may require certain Windows version. It's popular so you may pirate newer version easily, but be aware of virus.<br /><br />"+
+            "Max OS X is an expensive OS that comes with its own hardware. Its tools commonly have UI, but its terminal is excellent, and can run a lot of Linux's tools. Even though it requires more resources to display the UI, it has good memory management, so frequently-used tools will open faster next time, even faster than on Linux in some cases.",
+    "specsSelection": "What are the specs?<br />"+
+            "1. "+CONSTANTS.specs[0].cpu.name+", "+CONSTANTS.specs[0].mem.name+", "+CONSTANTS.specs[0].hdd.name+"<br />"+
+            "2. "+CONSTANTS.specs[1].cpu.name+", "+CONSTANTS.specs[1].mem.name+", "+CONSTANTS.specs[1].hdd.name+"<br />"+
+            "3. "+CONSTANTS.specs[2].cpu.name+", "+CONSTANTS.specs[2].mem.name+", "+CONSTANTS.specs[2].hdd.name+"<br />"+
+            "4. Not sure",
+    "goToMission": "All set. Off you go. Open your favorite tool and connect to it. I'll be waiting."
 }
 
 function getTime() {
@@ -52,51 +83,68 @@ function randomIP() {
 var HackeRL = React.createClass({
     getInitialState: function() {
         var nickname = "anonymous-"+uuid().slice(0, 8);
+        ga('send', 'event', 'game', 'start', nickname);
         return {
-            nickname: nickname,
-            agent: false,
+            player: {
+                name: nickname,
+                job: false,
+                os: null,
+                cpu: null,
+                mem: null,
+                hdd: null
+            },
             debugging: false,
-            scene: "menu", 
+            scene: "opening", 
             systemMessages: [
                 logo,
                 "== Connected to server.",
                 "== Changes log:",
-                "== * Use chat room as gameover scene, with messages from the agent.",
-                "== * Generate random IP instead whenever new agent contacts",
+                "== * OS and specs selection",
+                "== * Hooks up GA.",
                 "== -",
                 "== - Welcome to h@ckeRL " + nickname + ".",
                 "== You were assigned an auto-generated nickname. Please register a new nickname via /nick newnickname, or identify via /msg NickServ identify <password>."
             ],
-            dialog: [
-                "Hey there, I have something interesting, wanna try? Type /info for more detail."
-            ]
+            dialog: []
         };
     },
     componentDidMount: function() {
-        window.setTimeout(function() {
-            var agent = "anonymous-"+uuid().slice(0, 8);
-            this.setState({agent: agent});
-        }.bind(this), 2000);
+        var player = this.state.player;
+        if (!player.job || !player.job.contact) {
+            window.setTimeout(function() {
+                var agent = "anonymous-"+uuid().slice(0, 8);
+                var dialog = this.state.dialog;
+                dialog.push(agent + ": " + CONSTANTS.messages["intro"]);
+                player.job = {contact: agent};
+                this.setState({dialog: dialog, player: player});
+            }.bind(this), 2000);
+        }
     },
     newGame: function() {
-        this.setState({scene: "hacking"})
+        ga('send', 'event', 'scene', 'change', 'desktop');
+        this.setState({scene: "desktop"})
     },
     endGame: function(stats) {
+        ga('send', 'event', 'scene', 'change', 'gameover');
+
+        var player = this.state.player;
         var dialog = this.state.dialog, systemMessages = this.state.systemMessages;
         var agentLastMsg = "Well, I'm disappointed. Luckily for you I could just destroy the VM so nobody can trace you, but you'll need to practice your skills. Bye.";
         dialog.push(agentLastMsg);
-        var agentQuitMsg = "== " + this.state.agent + " disconnected.";
+        var agentQuitMsg = "== " + player.job.contact + " disconnected.";
         dialog.push(agentQuitMsg);
 
-        systemMessages.push("== Private messages left for you from " + this.state.agent +": "+agentLastMsg);
+        systemMessages.push("== Private messages left for you from " + player.job.contact +": "+agentLastMsg);
         systemMessages.push(agentQuitMsg);
-        this.setState({scene: "menu", dialog: dialog, systemMessages: systemMessages, agent: false});
+        player.job.contact = false;
+        this.setState({scene: "opening", dialog: dialog, systemMessages: systemMessages, player:player});
 
         window.setTimeout(function() {
             // Generate a new agent with the same first dialog message.
             var agent = "anonymous-"+uuid().slice(0, 8);
+            player.job.contact = agent;
             var dialog = [this.state.dialog[0]];
-            this.setState({agent: agent, dialog: dialog});
+            this.setState({dialog: dialog, player: player});
         }.bind(this), 2000);
     },
     handleCommand: function(command) {
@@ -104,32 +152,91 @@ var HackeRL = React.createClass({
         switch(commandType) {
             case "nick":
                 var newnickname = args[0];
+                var player = this.state.player;
                 var systemMessages = this.state.systemMessages;
                 var dialog = this.state.dialog;
-                var updateMessage = "== "+this.state.nickname+" is now known as "+newnickname
+                var updateMessage = "== "+player.name+" is now known as "+newnickname
                 systemMessages.push(updateMessage);
                 dialog.push(updateMessage);
+                player.name = newnickname;
                 this.setState({
-                    nickname: args[0], 
+                    player: player,
                     systemMessages: systemMessages,
                     dialog: dialog
                 });
                 break;
             case "info":
+                var dialog = this.state.dialog;
+                dialog.push(this.state.player.job.contact + ": " + CONSTANTS.messages[commandType]);
+                this.setState({dialog: dialog});
+                break;
             case "details":
                 var dialog = this.state.dialog;
-                dialog.push(this.state.agent + ": " +messages[commandType]);
-                this.setState({dialog: dialog});
+                var player = this.state.player;
+                var messageTemplate = CONSTANTS.messages[commandType];
+                var ip = randomIP();
+                var message = messageTemplate.replace("{serverIP}", ip)
+                                            .replace("{username}", "admin")
+                                            .replace("{password}", uuid().slice(0, 8));
+                dialog.push(player.job.contact + ": " + message);
+                dialog.push(player.job.contact + ": " + CONSTANTS.messages["OSSelection"]);
+                player.job.server = ip;
+                this.setState({dialog: dialog, player: player});
                 break;
             case "connect":
                 var ip = args[0], username = args[1], password = args[2];
-                // @TODO: Validate input with instruction.
+                if (ip !== this.state.player.job.server) {
+                    var dialog = this.state.dialog;
+                    dialog.push("== Unknown server.");
+                    this.setState({dialog: dialog});
+                    break;
+                }
                 this.newGame();
                 break;
             case "reply":
+                var player = this.state.player;
                 var dialog = this.state.dialog;
-                dialog.push(this.state.nickname + ": " + args[0]);
-                this.setState({dialog: dialog});
+                var msg = args[0];
+                if (/^[0-9]$/.test(msg)) {
+                    var selection = parseInt(msg);
+                    if (selection === 4 && !player.os) {
+                        // Player wanted to know the different OS
+                        dialog.push(player.name + ": " + CONSTANTS.messages["OSInfo"]);
+                        dialog.push(player.name + ": " + CONSTANTS.messages["OSSelection"]);
+                    } else if (!player.os) {
+                        var os = CONSTANTS.OSes[selection-1];
+                        dialog.push(player.name + ": " + "I'm on " + os);
+                        player.os = os
+                        dialog.push(player.job.contact + ": " + CONSTANTS.messages["specsSelection"]);
+                        ga('send', 'event', 'player', 'selectOS', os)
+                    } else if (!player.cpu && !player.mem && !player.hdd) {
+                        // Chose the OS, in the process of picking the specs.
+                        var specs;
+                        if (selection === 4) {
+                            selection = Math.floor(ROT.RNG.getUniform() * CONSTANTS.specs.length);
+                            specs = CONSTANTS.specs[selection];
+                            dialog.push(player.job.contact + ": " + "I can tell from my scanner that it's a "+
+                                specs.cpu.name + ", " + specs.mem.name + ", " + specs.hdd.name);
+                            ga('send', 'event', 'player', 'selectSpecs', "random");
+                        } else {
+                            specs = CONSTANTS.specs[selection-1];
+                            var specsString = specs.cpu.name + ", " + specs.mem.name + ", " + specs.hdd.name
+                            dialog.push(player.name + ": " + "I have " + specsString);
+                            ga('send', 'event', 'player', 'selectSpecs', specsString);
+                        }
+
+                        player.cpu = specs.cpu.attribute;
+                        player.mem = specs.mem.attribute;
+                        player.hdd = specs.hdd.attribute;
+                        dialog.push(player.job.contact + ": " + CONSTANTS.messages["goToMission"]);
+                    }
+                } else {
+                    // Regular chat message.
+                    dialog.push(player.name + ": " + args[0]);
+                }
+                
+                ga('send', 'event', 'chat', 'reply', msg);
+                this.setState({dialog: dialog, player: player});
                 break;
         }
     },
@@ -154,22 +261,25 @@ var HackeRL = React.createClass({
             }
         });
         var dialog = this.state.dialog.map(function (msg, i) {
-            return <p key={"message-"+i}>{getTime() + " " + msg}</p>
-        }.bind(this));
+            return "<p>"+getTime()+" "+msg+"</p>";
+        }.bind(this)).join("");
         return (
             <Entity key="game" width={this.props.width} height={this.props.height} filter={this.state.scene+"Scene"}>
-                <Entity key="menuScene">
+                
+                <Entity key="openingScene">
                     <ChatRoom onChatMessage={this.handleCommand}>
                         <Entity key="Welcome">
                             {systemMessages}
                         </Entity>
-                        <Entity key={this.state.agent}>
-                            {dialog}
+                        <Entity key={this.state.player.job.contact}>
+                            <div key="dialog" dangerouslySetInnerHTML={{
+                                __html: dialog
+                            }} />
                         </Entity>
                     </ChatRoom>
                 </Entity>
 
-                <Entity key="hackingScene">
+                <Entity key="desktopScene">
                     <TileMap width={props.width}
                             height={props.height}
                             tileWidth={props.tileWidth}

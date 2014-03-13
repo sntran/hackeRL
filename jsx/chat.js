@@ -69,7 +69,7 @@ var ChatRoom = React.createClass({
     },
     renderRoom: function(child) {
         return (
-            <Entity key={child.props.key} ref={"messages-"+child.props.key} className="chat-entries" width="70%">
+            <Entity key={child.props.key} ref={"messages-"+child.props.key} className="chat-entries" width="70%" height="95%">
                 {child.props.children}
             </Entity>
         )
@@ -85,7 +85,7 @@ var ChatRoom = React.createClass({
             var tabName = child.props.key;
             if (!tabName) return false;
             return (
-                <Entity key={tabName+"Tab"} x={100*i+"px"} width="100px" className="tab"
+                <Entity key={tabName+"Tab"} x={150*i+"px"} width="150px" className="tab"
                         onClick={this.switchTab.bind(this, i, tabName)}
                         sprite={tabName===this.getActiveTabName()? "grey" : "#fff"}
                     >{tabName}</Entity>
@@ -95,12 +95,12 @@ var ChatRoom = React.createClass({
         return (
             <Entity key="chatroom"
             >
-                <Entity key="tabs" height="5%">
+                <Entity key="tabs" height="3%">
                     {tabs}
                 </Entity>
 
                 <Entity key="room" className="chat-room"
-                         y="5%" height="95%"
+                         y="3%" height="97%"
                          filter={this.getActiveTabName()}
                 >
                     {this.props.children.map(this.renderRoom)}
@@ -122,14 +122,14 @@ var ChatRoom = React.createClass({
 });
 
 var nicknames = [
-    "Snoogyschnookiekin",
+    "Snoogysckin",
     "Foofiecuddle",
     "Nookumkins",
     "Doodlewoogle",
     "Poofiekissie",
     "Moofiedoodle",
     "Smoochiepoo",
-    "Kissieschnookiepoo",
+    "Kissiespoo",
     "Gooblepie",
     "Doodlewuggy",
     "Snookumface",
@@ -140,12 +140,12 @@ var nicknames = [
     "Moogliewookum",
     "Bunkerboo",
     "Foofiepums",
-    "Schnookiedumpling",
+    "Schnookie",
     "Schnookiepie",
     "Moopiepoochie",
     "Mooglielover",
     "Booblesnuggy",
-    "Wookumpoofiecakes",
+    "Wookumpoofie",
     "Booblepoo",
     "Sweetiefoof",
     "Cutiegoo",
@@ -156,14 +156,14 @@ var nicknames = [
     "Boobledumplings",
     "Schnookumface",
     "Loverwooglepook",
-    "Nookumsweetiehead",
+    "Sweetiehead",
     "Honeygoo",
     "Poochiedumpling",
     "Wuddlegoo",
     "Wunnysnuggy",
     "Wuddlylips",
     "Loverpoof",
-    "Cuddlybabydumpling",
+    "Cuddlybaby",
     "Wooglecutie",
     "Poofcake",
     "Honeypoo"

@@ -71,6 +71,7 @@ var TileMap = React.createClass({
             // Can't move in this direction
             return; 
         }
+        this.turn++;
 
         var passableCallback = function(x, y) {
             return self.isPassable(x, y);
@@ -96,6 +97,7 @@ var TileMap = React.createClass({
                     newPlayerY = oldPlayerY;
                     player.hp -= actor.damage;
                     actor.hp -= player.damage
+                    ga('send', 'event', 'turn', 'attack', self.turn+"-"+actor.type);
                 }
 
                 if (player.hp <= 0) {
@@ -118,12 +120,14 @@ var TileMap = React.createClass({
                 var newKey = neighbors.splice(index, 1)[0];
                 newActors[newKey] = actor;
                 freeTiles.push(key); // Release the tile the actor was on.
+                ga('send', 'event', 'turn', 'normal', self.turn);
             } else {
                 x = path[0][0];
                 y = path[0][1];
                 var newKey = pos2key(x, y);
                 newActors[newKey] = actor;
                 freeTiles.push(key); // Release the tile the actor was on.
+                ga('send', 'event', 'turn', 'chased', self.turn+"-"+actor.type);
             }
         }
 
@@ -145,6 +149,7 @@ var TileMap = React.createClass({
         });
     },
     getInitialState: function() {
+        this.turn = 0;
         var props = this.props,
             tileX = props.width/props.tileWidth,
             tileY = props.height/props.tileHeight,
