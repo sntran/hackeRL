@@ -41,7 +41,14 @@ var RandomUsersList = React.createClass({
             )
         }.bind(this));
         return (
-            <Entity key="users" x={this.props.x} width={this.props.width} type="ul"
+            <Entity key="users" 
+                    x={this.props.x} 
+                    width={this.props.width} 
+                    type="ul"
+                    css={{
+                        "overflowX": "hidden",
+                        "overflowY": "auto"
+                    }}
             >{users}</Entity>
         );
     }

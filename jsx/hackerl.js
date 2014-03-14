@@ -270,7 +270,11 @@ var HackeRL = React.createClass({
         var props = this.props;
         var systemMessages = this.state.systemMessages.map(function (msg, i) {
             if (i===0) {
-                return <pre key="logo">{msg}</pre>;
+                return <pre key="logo" 
+                        style={{
+                            fontSize: "9px", fontWeight: "bold", color: "blue",
+                            overflowX: "hidden"
+                        }}>{msg}</pre>;
             } else {
                 var commands = msg.match(/(\/[a-zA-Z<>\s]+)(?=\.|\,)/g);
                 return <p key={"message-"+i}>{getTime() + " " + msg}</p>
@@ -283,16 +287,21 @@ var HackeRL = React.createClass({
             <Entity key="game" width={this.props.width} height={this.props.height} filter={this.state.scene+"Scene"}>
                 
                 <Entity key="openingScene">
-                    <ChatRoom onChatMessage={this.handleCommand}>
-                        <Entity key="Welcome">
-                            {systemMessages}
-                        </Entity>
-                        <Entity key={this.state.player.job.contact}>
-                            <div key="dialog" dangerouslySetInnerHTML={{
-                                __html: dialog
-                            }} />
-                        </Entity>
-                    </ChatRoom>
+                    <Window title="IRC" width={600} height={480} 
+                            onMinimize={function() {}}
+                            onClose={function() {}}
+                    >
+                        <ChatRoom onChatMessage={this.handleCommand}>
+                            <Entity key="Welcome">
+                                {systemMessages}
+                            </Entity>
+                            <Entity key={this.state.player.job.contact}>
+                                <div key="dialog" dangerouslySetInnerHTML={{
+                                    __html: dialog
+                                }} />
+                            </Entity>
+                        </ChatRoom>
+                    </Window>
                 </Entity>
 
                 <Entity key="desktopScene">

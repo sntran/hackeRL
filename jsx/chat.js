@@ -35,13 +35,21 @@ var ChatRoom = React.createClass({
     },
     renderRoom: function(child) {
         return (
-            <Entity key={child.props.key} ref={"messages-"+child.props.key} className="chat-entries" width="70%" height="95%">
+            <Entity key={child.props.key} 
+                    ref={"messages-"+child.props.key} 
+                    className="chat-entries" 
+                    width="70%" 
+                    height="95%"
+                    css={{
+                        "overflowY": "auto"
+                    }}
+                    overflow="auto">
                 {child.props.children}
             </Entity>
         )
     },
     render: function() {
-        var tabs = this.props.children.map(function (child, i) {
+        var tabs = React.Children.map(this.props.children, function (child, i) {
             var tabName = child.props.key;
             if (!tabName) return false;
             return (
@@ -55,12 +63,12 @@ var ChatRoom = React.createClass({
         return (
             <Entity key="chatroom"
             >
-                <Entity key="tabs" height="3%">
+                <Entity key="tabs" height="5%">
                     {tabs}
                 </Entity>
 
                 <Entity key="room" className="chat-room"
-                         y="3%" height="97%"
+                         y="5%" height="95%"
                          filter={this.getActiveTabName()}
                 >
                     {this.props.children.map(this.renderRoom)}

@@ -85,6 +85,7 @@ var Entity = React.createClass({
             width: "100%",
             height: "100%",
             hidden: false,
+            css: {},
             background: "none",
             actions: {
                 "37": "Left",
@@ -129,6 +130,9 @@ var Entity = React.createClass({
             background: this.props.sprite,
             backgroundSize: "100%"
         };
+        for (var key in this.props.css) {
+            styles[key] = this.props.css[key];
+        }
         var tabIndex = "none";
 
         for (var key in this.props.actions) {

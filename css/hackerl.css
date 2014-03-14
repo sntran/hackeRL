@@ -2,6 +2,10 @@ body {
     font-family: monospace;
 }
 
+ul {
+    padding-left: 0;
+}
+
 .player {
     -webkit-animation: blink 1s infinite steps(1, start);
        -moz-animation: blink 1s infinite steps(1, start);
