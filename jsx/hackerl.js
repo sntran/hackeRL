@@ -12,7 +12,7 @@ var logo = "\n"+
 "|__/  |__/|  $$\________/  \_______/|__/  \__/ \_______/|__/  |__/|________/\n"+
 "           \  $$$   /$$$                                                    \n"+
 "            \_  $$$$$$_/                                                    \n"+
-"              \______/  v0.8.1                                              \n"+
+"              \______/  v0.8.3                                              \n"+
 "\n";
 
 var CONSTANTS = {};
@@ -39,7 +39,7 @@ CONSTANTS.messages = {
     "info": "Okay, I hacked into a server, and have access to its memory. I need you to find some file in there. Are you up for it? Type /details for the server's info. ",
     "details": "Server IP: {serverIP}. Username: {username}. Password: {password}.",
     "OSSelection": "I still could not detect your OS. What is it again?<br />"
-                    +"1. Linux.<br />2. Mac OS X.<br />3. Linux.<br />4. I'm not sure?",
+                    +"1. Linux.<br />2. Mac OS X.<br />3. Windows.<br />4. I'm not sure?",
     "OSInfo": "Linux is free to install. It's fast, but you have to type command for everything. Tools running on Linux has high compatibility between Linux versions.<br/><br/>"+
             "Windows, on the other hand, requires a license to run. It's bloated with junks so everything is slow. It has UI though, so every thing is point and click. Certain softwares may require certain Windows version. It's popular so you may pirate newer version easily, but be aware of virus.<br /><br />"+
             "Max OS X is an expensive OS that comes with its own hardware. Its tools commonly have UI, but its terminal is excellent, and can run a lot of Linux's tools. Even though it requires more resources to display the UI, it has good memory management, so frequently-used tools will open faster next time, even faster than on Linux in some cases.",
@@ -48,7 +48,7 @@ CONSTANTS.messages = {
             "2. "+CONSTANTS.specs[1].cpu.name+", "+CONSTANTS.specs[1].mem.name+", "+CONSTANTS.specs[1].hdd.name+"<br />"+
             "3. "+CONSTANTS.specs[2].cpu.name+", "+CONSTANTS.specs[2].mem.name+", "+CONSTANTS.specs[2].hdd.name+"<br />"+
             "4. Not sure",
-    "goToMission": "All set. Off you go. Open your favorite tool and connect to it. I'll be waiting."
+    "goToMission": "All set. Off you go. Open your favorite tool and connect to it. I'll be waiting.",
 }
 
 function getTime() {
@@ -99,8 +99,9 @@ var HackeRL = React.createClass({
                 logo,
                 "== Connected to server.",
                 "== Changes log:",
-                "== * OS and specs selection",
-                "== * Hooks up GA.",
+                "== * Goal per map",
+                "== * Reaching goal will go back to chat room.",
+                "== * Fixed the third OS option.",
                 "== -",
                 "== - Welcome to h@ckeRL " + nickname + ".",
                 "== You were assigned an auto-generated nickname. Please register a new nickname via /nick newnickname, or identify via /msg NickServ identify <password>."
@@ -124,28 +125,35 @@ var HackeRL = React.createClass({
         ga('send', 'event', 'scene', 'change', 'desktop');
         this.setState({scene: "desktop"})
     },
-    endGame: function(stats) {
-        ga('send', 'event', 'scene', 'change', 'gameover');
+    endGame: function(completed, stats) {
+        ga('send', 'event', 'player', 'endGame', completed);
 
         var player = this.state.player;
         var dialog = this.state.dialog, systemMessages = this.state.systemMessages;
-        var agentLastMsg = "Well, I'm disappointed. Luckily for you I could just destroy the VM so nobody can trace you, but you'll need to practice your skills. Bye.";
-        dialog.push(agentLastMsg);
-        var agentQuitMsg = "== " + player.job.contact + " disconnected.";
-        dialog.push(agentQuitMsg);
+        if (completed) {
+            var agentMsg = "Excellent job. Thanks to you, I now have access to the bank ... eh, competitor's records.<br />"+
+                "Anyhow, you show potential kid. There is another job I want you to do though. Are you ready? /details for the target.";
+            dialog.push(agentMsg);
+            this.setState({scene: "opening", dialog: dialog});
+        } else {
+            var agentLastMsg = "Well, I'm disappointed. Luckily for you I could just destroy the VM so nobody can trace you, but you'll need to practice your skills. Bye.";
+            dialog.push(agentLastMsg);
+            var agentQuitMsg = "== " + player.job.contact + " disconnected.";
+            dialog.push(agentQuitMsg);
 
-        systemMessages.push("== Private messages left for you from " + player.job.contact +": "+agentLastMsg);
-        systemMessages.push(agentQuitMsg);
-        player.job.contact = false;
-        this.setState({scene: "opening", dialog: dialog, systemMessages: systemMessages, player:player});
+            systemMessages.push("== Private messages left for you from " + player.job.contact +": "+agentLastMsg);
+            systemMessages.push(agentQuitMsg);
+            player.job.contact = false;
+            this.setState({scene: "opening", dialog: dialog, systemMessages: systemMessages, player:player});
 
-        window.setTimeout(function() {
-            // Generate a new agent with the same first dialog message.
-            var agent = "anonymous-"+uuid().slice(0, 8);
-            player.job.contact = agent;
-            var dialog = [this.state.dialog[0]];
-            this.setState({dialog: dialog, player: player});
-        }.bind(this), 2000);
+            window.setTimeout(function() {
+                // Generate a new agent with the same first dialog message.
+                var agent = "anonymous-"+uuid().slice(0, 8);
+                player.job.contact = agent;
+                var dialog = [this.state.dialog[0]];
+                this.setState({dialog: dialog, player: player});
+            }.bind(this), 2000);
+        }
     },
     handleCommand: function(command) {
         var fullCommand = command[0], commandType = command[1], args = command[2] && command[2].split(" ");
@@ -179,7 +187,9 @@ var HackeRL = React.createClass({
                                             .replace("{username}", "admin")
                                             .replace("{password}", uuid().slice(0, 8));
                 dialog.push(player.job.contact + ": " + message);
-                dialog.push(player.job.contact + ": " + CONSTANTS.messages["OSSelection"]);
+                if (!player.os && !player.cpu && !player.mem && !player.hdd) {
+                    dialog.push(player.job.contact + ": " + CONSTANTS.messages["OSSelection"]);
+                }
                 player.job.server = ip;
                 this.setState({dialog: dialog, player: player});
                 break;
@@ -292,7 +302,7 @@ var HackeRL = React.createClass({
                             tileHeight={props.tileHeight}
                             enemies="10"
                             onDebug={this.handleTerminal}
-                            gameOver={this.endGame}
+                            onGameEnd={this.endGame}
                     >
                         <Entity key="player" className="player"
                                 hp={15}

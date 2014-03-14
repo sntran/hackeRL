@@ -57,21 +57,28 @@ var TileMap = React.createClass({
         return (tile && tile !== this.tileset[1]);
     },
     handleTurn: function(offsetX, offsetY) {
-        var player = this.state.player;
-        var freeTiles = this.state.freeTiles;
+        var state = this.state;
+        var player = state.player;
+        var goal = state.goal;
+        var freeTiles = state.freeTiles;
         var oldPlayerX = player.x;
         var oldPlayerY = player.y;
         var newPlayerX = oldPlayerX + offsetX;
         var newPlayerY = oldPlayerY + offsetY;
-        var actors = this.state.actors;
+        var actors = state.actors;
         var self = this;
 
-        var tiles = this.state.tiles;
+        var tiles = state.tiles;
         if (!this.isPassable(newPlayerX, newPlayerY)) { 
             // Can't move in this direction
             return; 
         }
         this.turn++;
+
+        if (newPlayerX == goal.x && newPlayerY == goal.y) {
+            // Acquired the goal.
+            this.props.onGameEnd(true);
+        }
 
         var passableCallback = function(x, y) {
             return self.isPassable(x, y);
@@ -101,7 +108,7 @@ var TileMap = React.createClass({
                 }
 
                 if (player.hp <= 0) {
-                    self.props.gameOver();
+                    self.props.onGameEnd(false);
                 }
                 if (actor.hp > 0) {
                     newActors[key] = actor;
