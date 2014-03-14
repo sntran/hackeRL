@@ -188,6 +188,30 @@ var TileMap = React.createClass({
         var posX = parseInt(position[0]);
         var posY = parseInt(position[1]);
 
+        // Find the furthest free tile and put the goal there
+        var self = this;
+        var passableCallback = function(x, y) {
+            var key = pos2key(x, y);
+            var tile = tiles[key];
+            return (tile && tile !== self.tileset[1]);
+        }
+        var astar = new ROT.Path.AStar(posX, posY, passableCallback);
+
+        var furthestKeyIdx = 0, furthestLength = 0;
+        freeTiles.forEach(function (key, idx) {
+            var pathLength = 0;
+            var pathCallback = function(pathX, pathY) {
+                pathLength++;
+            }
+            var pos = key2pos(key);
+            astar.compute(pos.x, pos.y, pathCallback);
+            if (pathLength > furthestLength) {
+                furthestLength = pathLength;
+                furthestKeyIdx = idx;
+            }
+        });
+        var goal = key2pos(freeTiles.splice(furthestKeyIdx, 1)[0]);
+
         return {
             tiles: tiles,
             freeTiles: freeTiles,
@@ -196,7 +220,8 @@ var TileMap = React.createClass({
             player: {
                 x: posX,
                 y: posY
-            }
+            },
+            goal: goal
         };
     },
     componentWillMount: function() {
@@ -289,6 +314,14 @@ var TileMap = React.createClass({
                 >
                     {this.renderPlayer()}
                     {this.renderActors()}
+                    <Entity key="goal"
+                            width={props.tileWidth+"px"}
+                            height={props.tileHeight+"px"}
+                            x={state.goal.x*props.tileWidth}
+                            y={state.goal.y*props.tileHeight}
+                    >
+                        <span style={{color: "blue"}}>✉</span>
+                    </Entity>
                 </Entity>
             </Entity>
         )

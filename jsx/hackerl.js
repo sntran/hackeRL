@@ -12,7 +12,7 @@ var logo = "\n"+
 "|__/  |__/|  $$\________/  \_______/|__/  \__/ \_______/|__/  |__/|________/\n"+
 "           \  $$$   /$$$                                                    \n"+
 "            \_  $$$$$$_/                                                    \n"+
-"              \______/  v0.8.0                                              \n"+
+"              \______/  v0.8.1                                              \n"+
 "\n";
 
 var CONSTANTS = {};
@@ -184,6 +184,12 @@ var HackeRL = React.createClass({
                 this.setState({dialog: dialog, player: player});
                 break;
             case "connect":
+                if (!args) {
+                    var dialog = this.state.dialog;
+                    dialog.push("== Unknown server.");
+                    this.setState({dialog: dialog});
+                    break;
+                }
                 var ip = args[0], username = args[1], password = args[2];
                 if (ip !== this.state.player.job.server) {
                     var dialog = this.state.dialog;
