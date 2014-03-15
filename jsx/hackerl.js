@@ -94,7 +94,7 @@ var HackeRL = React.createClass({
                 hdd: null
             },
             debugging: false,
-            scene: "opening", 
+            scene: "desktop", 
             systemMessages: [
                 logo,
                 "== Connected to server.",
@@ -272,7 +272,7 @@ var HackeRL = React.createClass({
             if (i===0) {
                 return <pre key="logo" 
                         style={{
-                            fontSize: "9px", fontWeight: "bold", color: "blue",
+                            fontWeight: "bold", color: "blue",
                             overflowX: "hidden"
                         }}>{msg}</pre>;
             } else {
@@ -283,11 +283,18 @@ var HackeRL = React.createClass({
         var dialog = this.state.dialog.map(function (msg, i) {
             return "<p>"+getTime()+" "+msg+"</p>";
         }.bind(this)).join("");
+
+        var screenWidth = props.width;
+        var screenHeight = props.height;
+        var editorWidth = props.width*70/100;
+        var mapWidth = props.width;
+        var mapHeight = props.height;
+
         return (
-            <Entity key="game" width={this.props.width} height={this.props.height} filter={this.state.scene+"Scene"}>
+            <Entity key="game" width={screenWidth} height={screenHeight} filter={this.state.scene+"Scene"}>
                 
                 <Entity key="openingScene">
-                    <Window title="IRC" width={600} height={480} 
+                    <Window key="IRC" width={screenWidth} height={screenHeight} 
                             onMinimize={function() {}}
                             onClose={function() {}}
                     >
@@ -305,36 +312,36 @@ var HackeRL = React.createClass({
                 </Entity>
 
                 <Entity key="desktopScene">
-                    <TileMap width={props.width}
-                            height={props.height}
-                            tileWidth={props.tileWidth}
-                            tileHeight={props.tileHeight}
-                            enemies="10"
-                            onDebug={this.handleTerminal}
-                            onGameEnd={this.endGame}
+                    <Window key="Editor" width={editorWidth} height={screenHeight}
+                            onMinimize={function() {}}
+                            onClose={function() {}}
                     >
-                        <Entity key="player" className="player"
-                                hp={15}
-                                damage={1}
-                        >
+                        <Entity key="memoryMap">
+                            <TileMap width={mapWidth}
+                                    height={mapHeight}
+                                    tileWidth={props.tileWidth}
+                                    tileHeight={props.tileHeight}
+                                    viewportWidth={editorWidth}
+                                    viewportHeight={screenHeight-props.tileHeight}
+                                    enemies="10"
+                                    fov="15"
+                                    onDebug={this.handleTerminal}
+                                    onGameEnd={this.endGame}
+                            >
+                                <Entity key="player" className="player"
+                                        hp={15}
+                                        damage={1}
+                                >
+                                </Entity>
+                            </TileMap>
                         </Entity>
-                    </TileMap>
-
-                    <Entity key="terminal" ref="terminal"
-                            height="30%"
-                            hidden={!this.state.debugging}
-                            sprite="#111111"
+                    </Window>
+                    <Window key="ProcessManager" x={editorWidth} width={screenWidth-editorWidth} height={screenHeight} 
+                            onMinimize={function() {}}
+                            onClose={function() {}}
                     >
-                        <input type="text" ref="shell"
-                            style={{
-                                position: "relative",
-                                top: "85%",
-                                width: "100%",
-                                color: "#fff",
-                                backgroundColor: "#111111",
-                                border: "none"
-                            }} />
-                    </Entity>
+                        <Entity sprite="black"/>
+                    </Window>
                 </Entity>
             </Entity>
         );

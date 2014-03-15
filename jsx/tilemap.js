@@ -157,10 +157,10 @@ var TileMap = React.createClass({
     },
     getInitialState: function() {
         this.turn = 0;
-        var props = this.props,
+        var self = this, props = self.props,
             tileX = props.width/props.tileWidth,
             tileY = props.height/props.tileHeight,
-            tiles = {}, actors = {},
+            tiles = {}, visibleTiles = {}, actors = {},
             tileset = this.tileset,
             tileMap = new ROT.Map.Digger(tileX, tileY, {
                 roomWidth: [5, 10],
@@ -168,6 +168,7 @@ var TileMap = React.createClass({
                 dugPercentage: 0.5
             });
 
+        // Generate a map with at least certain number of rooms
         var freeTiles = [], rooms;
         do {
             freeTiles.length = 0;
@@ -180,6 +181,7 @@ var TileMap = React.createClass({
             rooms = tileMap.getRooms();
         } while (rooms.length < 10);
 
+        // Genrate the locations of the actors.
         while (this.props.enemies--) {
             var index = Math.floor(ROT.RNG.getUniform() * freeTiles.length);
             var key = freeTiles.splice(index, 1)[0];
@@ -189,14 +191,39 @@ var TileMap = React.createClass({
             actors[key] = new Actor(types[index]);
         }
 
+        // Spawn the player at a random location.
         var index = Math.floor(ROT.RNG.getUniform() * freeTiles.length);
         var key = freeTiles.splice(index, 1)[0];
         var position = key.split(",");
         var posX = parseInt(position[0]);
         var posY = parseInt(position[1]);
 
+        // Compute the FOV of the player
+        var lightPasses = function(x, y) {
+            // var key =pos2key(x,y);
+            // var tile = tiles[key];
+            // return (tile && tile !== self.tileset[1]);
+            return ((x < posX + props.fov) && (y < posY + props.fov))
+                || ((x > posX - props.fov) && (y > posY - props.fov));
+        }
+
+        var fov = new ROT.FOV.PreciseShadowcasting(lightPasses);
+
+        /* output callback */
+        fov.compute(posX, posY, props.fov, function (x, y, r, visibility) {
+            // var ch = (r ? "" : "@");
+            // var color = (data[x+","+y] ? "#aa0": "#660");
+            // display.draw(x, y, ch, "#fff", color);
+
+            var key = pos2key(x, y);
+            var symbol = "";
+            if (r === 0) symbol = "";
+            else if (key in actors) symbol = actors[key].type;
+            else symbol = tiles[key];
+            visibleTiles[key] = symbol;
+        });
+
         // Find the furthest free tile and put the goal there
-        var self = this;
         var passableCallback = function(x, y) {
             var key = pos2key(x, y);
             var tile = tiles[key];
@@ -222,6 +249,7 @@ var TileMap = React.createClass({
         return {
             tiles: tiles,
             freeTiles: freeTiles,
+            visibleTiles: visibleTiles,
             rooms: rooms, 
             actors: actors,
             player: {
@@ -243,7 +271,7 @@ var TileMap = React.createClass({
             tileWidth = props.tileWidth,
             tileHeight = props.tileHeight,
             tileY = props.height/tileHeight,
-            tiles = this.state.tiles;
+            tiles = this.state.visibleTiles;
 
         var tileEntities = [];
         for (var key in tiles) {
@@ -304,12 +332,13 @@ var TileMap = React.createClass({
                 </Entity>
             )
         }
-        return actorEntities;
+        // return actorEntities;
+        return false;
     },
     render: function() {
         var state = this.state, player = state.player, props = this.props;
         return (
-            <Entity key="memoryMap" sprite="#111111">
+            <Entity key="memoryMap" sprite="#111111" css={{overflow: "hidden"}}>
                 {this.renderTiles()}
 
                 <Entity key="actorsLayer" filter={false} ref="actorsLayer"

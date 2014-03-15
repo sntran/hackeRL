@@ -13,7 +13,9 @@ var Window = React.createClass({
         var props = this.props,
             titleBarHeight = this.properties.titleBarHeight;
         return (
-            <Entity key={"window-"+props.title} 
+            <Entity key={"window-"+props.key}
+                    x={props.x}
+                    y={props.y}
                     width={props.width} 
                     height={props.height}
             >
@@ -24,7 +26,9 @@ var Window = React.createClass({
                         height={titleBarHeight}
                         sprite="blue"
                 >
-                    <span style={{position: "relative", left: titleBarHeight, color: "white"}}>{props.title}</span>
+                    <span style={{position: "relative", left: titleBarHeight, color: "white"}}>
+                        {props.key}
+                    </span>
                     <Entity key="minimize-button" type="button"
                             x={props.width-titleBarHeight*2}
                             y="0"
