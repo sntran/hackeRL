@@ -53,7 +53,7 @@ var ChatRoom = React.createClass({
             var tabName = child.props.key;
             if (!tabName) return false;
             return (
-                <Entity key={tabName+"Tab"} x={150*i+"px"} width="150px" className="tab"
+                <Entity key={tabName+"Tab"} x={250*i+"px"} width="250px" className="tab"
                         onClick={this.switchTab.bind(this, i, tabName)}
                         sprite={tabName===this.getActiveTabName()? "grey" : "#fff"}
                     >{tabName}</Entity>

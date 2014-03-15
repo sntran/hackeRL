@@ -12,7 +12,7 @@ var logo = "\n"+
 "|__/  |__/|  $$\________/  \_______/|__/  \__/ \_______/|__/  |__/|________/\n"+
 "           \  $$$   /$$$                                                    \n"+
 "            \_  $$$$$$_/                                                    \n"+
-"              \______/  v0.8.3                                              \n"+
+"              \______/  v0.9.0                                              \n"+
 "\n";
 
 var CONSTANTS = {};
@@ -94,14 +94,13 @@ var HackeRL = React.createClass({
                 hdd: null
             },
             debugging: false,
-            scene: "desktop", 
+            scene: "opening", 
             systemMessages: [
                 logo,
                 "== Connected to server.",
                 "== Changes log:",
-                "== * Goal per map",
-                "== * Reaching goal will go back to chat room.",
-                "== * Fixed the third OS option.",
+                "== * Camera to reduce render",
+                "== * Fixed various bugs.",
                 "== -",
                 "== - Welcome to h@ckeRL " + nickname + ".",
                 "== You were assigned an auto-generated nickname. Please register a new nickname via /nick newnickname, or identify via /msg NickServ identify <password>."
@@ -324,7 +323,6 @@ var HackeRL = React.createClass({
                                     viewportWidth={editorWidth}
                                     viewportHeight={screenHeight-props.tileHeight}
                                     enemies={10}
-                                    fov={10}
                                     onDebug={this.handleTerminal}
                                     onGameEnd={this.endGame}
                             >
