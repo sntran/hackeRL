@@ -192,22 +192,6 @@ var HackeRL = React.createClass({
                 player.job.server = ip;
                 this.setState({dialog: dialog, player: player});
                 break;
-            case "connect":
-                if (!args) {
-                    var dialog = this.state.dialog;
-                    dialog.push("== Unknown server.");
-                    this.setState({dialog: dialog});
-                    break;
-                }
-                var ip = args[0], username = args[1], password = args[2];
-                if (ip !== this.state.player.job.server) {
-                    var dialog = this.state.dialog;
-                    dialog.push("== Unknown server.");
-                    this.setState({dialog: dialog});
-                    break;
-                }
-                this.newGame();
-                break;
             case "reply":
                 var player = this.state.player;
                 var dialog = this.state.dialog;
@@ -253,6 +237,28 @@ var HackeRL = React.createClass({
                 ga('send', 'event', 'chat', 'reply', msg);
                 this.setState({dialog: dialog, player: player});
                 break;
+            case "connect":
+                var dialog = this.state.dialog;
+                var player = this.state.player;
+                if (!player.os && !player.cpu && !player.mem && !player.hdd) {
+                    dialog.push(player.job.contact + ": I can't let you do the task without knowing you are well-equipped or not.");
+                    dialog.push(player.job.contact + ": " + CONSTANTS.messages["OSSelection"]);
+                    this.setState({dialog: dialog});
+                    break;
+                }
+                if (!args) {
+                    dialog.push("== Unknown server.");
+                    this.setState({dialog: dialog});
+                    break;
+                }
+                var ip = args[0], username = args[1], password = args[2];
+                if (ip !== player.job.server) {
+                    dialog.push("== Unknown server.");
+                    this.setState({dialog: dialog});
+                    break;
+                }
+                this.newGame();
+                break;
         }
     },
     handleTerminal: function(e) {
@@ -265,9 +271,8 @@ var HackeRL = React.createClass({
         });
     },
     render: function() {
-        var account = this.state.account;
-        var props = this.props;
-        var systemMessages = this.state.systemMessages.map(function (msg, i) {
+        var props = this.props, state = this.state, player = state.player;
+        var systemMessages = state.systemMessages.map(function (msg, i) {
             if (i===0) {
                 return <pre key="logo" 
                         style={{
@@ -279,7 +284,7 @@ var HackeRL = React.createClass({
                 return <p key={"message-"+i}>{getTime() + " " + msg}</p>
             }
         });
-        var dialog = this.state.dialog.map(function (msg, i) {
+        var dialog = state.dialog.map(function (msg, i) {
             return "<p>"+getTime()+" "+msg+"</p>";
         }.bind(this)).join("");
 
@@ -290,7 +295,7 @@ var HackeRL = React.createClass({
         var mapHeight = props.height;
 
         return (
-            <Entity key="game" width={screenWidth} height={screenHeight} filter={this.state.scene+"Scene"}>
+            <Entity key="game" width={screenWidth} height={screenHeight} filter={state.scene+"Scene"}>
                 
                 <Entity key="openingScene">
                     <Window key="IRC" width={screenWidth} height={screenHeight} 
@@ -301,7 +306,7 @@ var HackeRL = React.createClass({
                             <Entity key="Welcome">
                                 {systemMessages}
                             </Entity>
-                            <Entity key={this.state.player.job.contact}>
+                            <Entity key={player.job.contact}>
                                 <div key="dialog" dangerouslySetInnerHTML={{
                                     __html: dialog
                                 }} />
@@ -338,7 +343,10 @@ var HackeRL = React.createClass({
                             onMinimize={function() {}}
                             onClose={function() {}}
                     >
-                        <Entity sprite="black"/>
+                        <h2>{player.os}</h2>
+                        <p>CPU: {player.cpu}</p>
+                        <p>MEM: {player.mem}</p>
+                        <p>HDD: {player.hdd}</p>
                     </Window>
                 </Entity>
             </Entity>
