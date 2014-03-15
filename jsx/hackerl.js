@@ -344,9 +344,9 @@ var HackeRL = React.createClass({
                             onClose={function() {}}
                     >
                         <h2>{player.os}</h2>
-                        <p>CPU: {player.cpu}</p>
-                        <p>MEM: {player.mem}</p>
-                        <p>HDD: {player.hdd}</p>
+                        <p>CPU: {player.cpu}GHz</p>
+                        <p>MEM: {player.mem}GB</p>
+                        <p>Disk: {player.hdd}</p>
                     </Window>
                 </Entity>
             </Entity>
