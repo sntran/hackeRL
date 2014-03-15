@@ -24,6 +24,9 @@ function key2pos(key) {
 function pos2key(x, y) {
     return x+","+y;
 }
+function clamp(number, min, max) {
+    return Math.max(min, Math.min(number, max));
+}
 
 var ActorTemplates = {
     "☠": {
@@ -56,6 +59,16 @@ var TileMap = React.createClass({
         var tile = this.state.tiles[key];
         return (tile && tile !== this.tileset[1]);
     },
+    computeCamera: function(mapper) {
+        var fov = this.props.camera;
+        for (var i=0; i < camera.width; i++) {
+            for (var j=0; j < camera.height; j++) {
+                var mapX = i+(camera.x - Math.ceil(camera.width/2));
+                var mapY = j+(camera.y - Math.ceil(camera.height/2));
+                mapper(mapX, mapY, i, j);
+            }
+        };
+    },
     handleTurn: function(offsetX, offsetY) {
         var state = this.state; props = this.props;
         var player = state.player;
@@ -80,73 +93,71 @@ var TileMap = React.createClass({
             this.props.onGameEnd(true);
         }
 
-        // Move the camera if player is near the edge of screen.
-        var edge = 4;
-        if (newPlayerX > (camera.x + props.fov - edge ) || newPlayerX < (camera.x-props.fov + edge)) {
-            camera.x += offsetX;
-        }
-        if (newPlayerY > (camera.y + props.fov - edge ) || newPlayerY < (camera.y-props.fov + edge)) {
-            camera.y += offsetY;
-        }
-
-        var passableCallback = function(x, y) {
-            return self.isPassable(x, y);
-        };
         var astar = new ROT.Path.AStar(newPlayerX, newPlayerY, this.isPassable, {topology:4});
         var newActors = {};
-        // for (var key in actors) {
-        //     var actor = actors[key];
-        //     var parts = key2pos(key);
-        //     var x = parts.x, y = parts.y;
-        //     var path = [];
-        //     astar.compute(x, y, function(pathX, pathY) { path.push([pathX, pathY]); });
 
-        //     path.shift(); /* remove the actor's position */
-        //     if (path.length === 0 || path.length === 1) {
-        //         // This actor is next to the player.
-        //         if (pos2key(newPlayerX, newPlayerY) === key) {
-        //             // Don't move the player
-        //             newPlayerY = oldPlayerX;
-        //             newPlayerY = oldPlayerY;
-        //             player.hp -= actor.damage;
-        //             actor.hp -= player.damage;
-        //             ga('send', 'event', 'turn', 'attack', self.turn+"-"+actor.type);
-        //         }
+        for (var key in actors) {
+            var actor = actors[key];
+            var parts = key2pos(key);
+            var x = parts.x, y = parts.y;
+            var path = [];
+            astar.compute(x, y, function(pathX, pathY) { path.push([pathX, pathY]); });
 
-        //         if (player.hp <= 0) {
-        //             self.props.onGameEnd(false);
-        //         }
-        //         if (actor.hp > 0) {
-        //             newActors[key] = actor;
-        //         }
-        //     } else if (path.length > 10) {
-        //         var neighbors = [[-1,0], [1,0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]];
-        //         neighbors = neighbors.map(function(offset) {
-        //             var possibleX = x+offset[0], possibleY = y+offset[1];
-        //             if (self.isPassable(possibleX, possibleY)) {
-        //                 return pos2key(possibleX, possibleY);
-        //             }
-        //             return pos2key(x, y);
-        //         });
+            path.shift(); /* remove the actor's position */
+            if (path.length === 0 || path.length === 1) {
+                // This actor is next to the player.
+                if (pos2key(newPlayerX, newPlayerY) === key) {
+                    // Don't move the player
+                    newPlayerY = oldPlayerX;
+                    newPlayerY = oldPlayerY;
+                    player.hp -= actor.damage;
+                    actor.hp -= player.damage;
+                    ga('send', 'event', 'turn', 'attack', self.turn+"-"+actor.type);
+                }
 
-        //         var index = Math.floor(ROT.RNG.getUniform() * neighbors.length);
-        //         var newKey = neighbors.splice(index, 1)[0];
-        //         newActors[newKey] = actor;
-        //         freeTiles.push(key); // Release the tile the actor was on.
-        //         ga('send', 'event', 'turn', 'normal', self.turn);
-        //     } else {
-        //         x = path[0][0];
-        //         y = path[0][1];
-        //         var newKey = pos2key(x, y);
-        //         newActors[newKey] = actor;
-        //         freeTiles.push(key); // Release the tile the actor was on.
-        //         ga('send', 'event', 'turn', 'chased', self.turn+"-"+actor.type);
-        //     }
-        // }
+                if (player.hp <= 0) {
+                    self.props.onGameEnd(false);
+                }
+                if (actor.hp > 0) {
+                    newActors[key] = actor;
+                }
+            } else if (path.length > 10) {
+                var neighbors = [[-1,0], [1,0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]];
+                neighbors = neighbors.map(function(offset) {
+                    var possibleX = x+offset[0], possibleY = y+offset[1];
+                    if (self.isPassable(possibleX, possibleY)) {
+                        return pos2key(possibleX, possibleY);
+                    }
+                    return pos2key(x, y);
+                });
+
+                var index = Math.floor(ROT.RNG.getUniform() * neighbors.length);
+                var newKey = neighbors.splice(index, 1)[0];
+                newActors[newKey] = actor;
+                freeTiles.push(key); // Release the tile the actor was on.
+                ga('send', 'event', 'turn', 'normal', self.turn);
+            } else {
+                x = path[0][0];
+                y = path[0][1];
+                var newKey = pos2key(x, y);
+                newActors[newKey] = actor;
+                freeTiles.push(key); // Release the tile the actor was on.
+                ga('send', 'event', 'turn', 'chased', self.turn+"-"+actor.type);
+            }
+        }
 
         player.x = newPlayerX;
         player.y = newPlayerY;
         freeTiles.push(pos2key(oldPlayerX, oldPlayerY));// Release the tile the player was on.
+
+        //Move the camera if player is near the edge of screen.
+        var edgeX = Math.floor(camera.width/4), edgeY = Math.floor(camera.height/4);
+        if ((newPlayerX > (camera.x + edgeX) && offsetX > 0) || (newPlayerX < (camera.x-edgeX) && offsetX < 0)) {
+            camera.x = clamp(camera.x+offsetX, Math.ceil(camera.width/2), props.width-Math.floor(camera.width/2));
+        }
+        if ((newPlayerY > (camera.y + edgeY) && offsetY > 0) || (newPlayerY < (camera.y-edgeY) && offsetY < 0)) {
+            camera.y = clamp(camera.y+offsetY, Math.floor(camera.height/2), props.height-Math.floor(camera.height/2));
+        }
 
         // Remove the tiles the player and actors are on.
         freeTiles = freeTiles.filter(function (oldFreeTileKey, idx) {
@@ -165,11 +176,11 @@ var TileMap = React.createClass({
     getInitialState: function() {
         this.turn = 0;
         var self = this, props = self.props,
-            tileX = props.width/props.tileWidth,
-            tileY = props.height/props.tileHeight,
+            width = props.width,
+            height = props.height,
             tiles = {}, actors = {},
             tileset = this.tileset,
-            tileMap = new ROT.Map.Digger(tileX, tileY, {
+            tileMap = new ROT.Map.Digger(width, height, {
                 roomWidth: [5, 10],
                 roomHeight: [5, 10],
                 dugPercentage: 0.5
@@ -205,7 +216,14 @@ var TileMap = React.createClass({
         var posX = parseInt(position[0]);
         var posY = parseInt(position[1]);
 
-        var camera = {x: posX, y: posY};
+        var cameraWidth = Math.floor(props.viewportWidth/props.tileWidth);
+        var cameraHeight = Math.floor(props.viewportHeight/props.tileHeight);
+        var camera = {
+            x: clamp(posX, Math.floor(cameraWidth/2), width-Math.floor(cameraWidth/2)), 
+            y: clamp(posY, Math.floor(cameraHeight/2), height-Math.floor(cameraHeight/2)),
+            width: cameraWidth,
+            height: cameraHeight
+        };
 
         // Find the furthest free tile and put the goal there
         var passableCallback = function(x, y) {
@@ -254,43 +272,42 @@ var TileMap = React.createClass({
         var props = this.props, state = this.state;
             tileWidth = props.tileWidth,
             tileHeight = props.tileHeight,
-            tileY = props.height/tileHeight,
+            height = props.height,
             tiles = state.tiles,
             player = state.player,
+            goal = state.goal,
             camera = state.camera,
             actors = state.actors;
 
-        var tileEntities = [];
-        for (var i=0; i < props.fov*2; i++) {
-            for (var j=0; j < props.fov*2; j++) {
-                var screenX = i+(camera.x - props.fov);
-                var screenY = j+(camera.y - props.fov);
-                var key = pos2key(screenX, screenY);
-                var symbol = "";
-                if (screenX === player.x && screenY === player.y) symbol = "";
-                else if (key in actors) symbol = actors[key].type;
-                else symbol = tiles[key];
-                var color = (symbol=="FF")? "#00f7fb" : (HackeRL.DEBUG? "green": "#fff");
-                tileEntities.push(
-                    <Entity key={"tile"+(screenX)+"-"+(screenY)} className={symbol === ""? "player" : ""}
-                            width={tileWidth+"px"}
-                            height={tileHeight+"px"}
-                            x={i*tileWidth}
-                            y={j*tileHeight}
-                            sprite={symbol===""? "#aaa": color}
-                    >
-                        <span style={{color: "#111111"}}>{symbol}</span>
-                    </Entity>
-                )
-            }
-        }
+        var entities = [];
 
-        return tileEntities;
+        this.computeCamera(function (mapX, mapY, screenX, screenY) {
+            var key = pos2key(mapX, mapY);
+            var symbol = "";
+            if (mapX === player.x && mapY === player.y) symbol = "";
+            else if (mapX === goal.x && mapY === goal.y) symbol = "✉";
+            else if (key in actors) symbol = actors[key].type;
+            else symbol = tiles[key];
+            var color = (symbol=="FF")? "#00f7fb" : (HackeRL.DEBUG? "green": "#fff");
+            entities.push(
+                <Entity key={"tile"+(mapX)+"-"+(mapY)} className={symbol === ""? "player" : ""}
+                        width={tileWidth+"px"}
+                        height={tileHeight+"px"}
+                        x={screenX*tileWidth}
+                        y={screenY*tileHeight}
+                        sprite={symbol===""? "#aaa": color}
+                >
+                    <span style={{color: "#111111"}}>{symbol}</span>
+                </Entity>
+            )
+        });
+
+        return entities;
     },
     render: function() {
         var state = this.state, player = state.player, props = this.props;
         return (
-            <Entity key="memoryMap" sprite="#111111" css={{overflow: "hidden"}}>
+            <Entity key="memoryMap" sprite="#111111" css={{overflow: "hidden", fontSize: "20px"}}>
                 {this.renderTiles()}
 
                 <Entity key="actorsLayer" filter={false} ref="actorsLayer"
@@ -300,14 +317,6 @@ var TileMap = React.createClass({
                         onActionDown={this.handleTurn.bind(this, 0, 1)}
                         onActionDebug={props.onDebug}
                 >
-                    <Entity key="goal"
-                            width={props.tileWidth+"px"}
-                            height={props.tileHeight+"px"}
-                            x={state.goal.x*props.tileWidth}
-                            y={state.goal.y*props.tileHeight}
-                    >
-                        <span style={{color: "blue"}}>✉</span>
-                    </Entity>
                 </Entity>
             </Entity>
         )

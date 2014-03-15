@@ -317,8 +317,8 @@ var HackeRL = React.createClass({
                             onClose={function() {}}
                     >
                         <Entity key="memoryMap">
-                            <TileMap width={mapWidth}
-                                    height={mapHeight}
+                            <TileMap width={props.tileX}
+                                    height={props.tileY}
                                     tileWidth={props.tileWidth}
                                     tileHeight={props.tileHeight}
                                     viewportWidth={editorWidth}
@@ -348,12 +348,13 @@ var HackeRL = React.createClass({
     }
 });
 
-var tileWidth=16, tileHeight=16;
+var tileWidth=32, tileHeight=26;
 
 HackeRL.DEBUG = false;
 
 React.renderComponent(
-    <HackeRL width={tileWidth*60} height={tileHeight*40} 
+    <HackeRL width={tileWidth*30} height={tileHeight*25} 
+            tileX={60} tileY={40}
             tileWidth={tileWidth} tileHeight={tileHeight}
     />, document.getElementById('content')
 );
