@@ -323,8 +323,8 @@ var HackeRL = React.createClass({
                                     tileHeight={props.tileHeight}
                                     viewportWidth={editorWidth}
                                     viewportHeight={screenHeight-props.tileHeight}
-                                    enemies="10"
-                                    fov="15"
+                                    enemies={10}
+                                    fov={10}
                                     onDebug={this.handleTerminal}
                                     onGameEnd={this.endGame}
                             >

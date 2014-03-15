@@ -57,7 +57,7 @@ var TileMap = React.createClass({
         return (tile && tile !== this.tileset[1]);
     },
     handleTurn: function(offsetX, offsetY) {
-        var state = this.state;
+        var state = this.state; props = this.props;
         var player = state.player;
         var goal = state.goal;
         var freeTiles = state.freeTiles;
@@ -65,13 +65,13 @@ var TileMap = React.createClass({
         var oldPlayerY = player.y;
         var newPlayerX = oldPlayerX + offsetX;
         var newPlayerY = oldPlayerY + offsetY;
-        var actors = state.actors;
+        var actors = state.actors; camera = state.camera;
         var self = this;
 
         var tiles = state.tiles;
-        if (!this.isPassable(newPlayerX, newPlayerY)) { 
+        if (!this.isPassable(newPlayerX, newPlayerY)) {
             // Can't move in this direction
-            return; 
+            return;
         }
         this.turn++;
 
@@ -80,63 +80,69 @@ var TileMap = React.createClass({
             this.props.onGameEnd(true);
         }
 
+        // Move the camera if player is near the edge of screen.
+        var edge = 4;
+        if (newPlayerX > (camera.x + props.fov - edge ) || newPlayerX < (camera.x-props.fov + edge)) {
+            camera.x += offsetX;
+        }
+        if (newPlayerY > (camera.y + props.fov - edge ) || newPlayerY < (camera.y-props.fov + edge)) {
+            camera.y += offsetY;
+        }
+
         var passableCallback = function(x, y) {
             return self.isPassable(x, y);
-        }
-        var astar = new ROT.Path.AStar(newPlayerX, newPlayerY, passableCallback, {topology:4});
+        };
+        var astar = new ROT.Path.AStar(newPlayerX, newPlayerY, this.isPassable, {topology:4});
         var newActors = {};
-        for (var key in actors) {
-            var actor = actors[key];
-            var parts = key2pos(key)
-            var x = parts.x, y = parts.y;
-            var path = [];
-            var pathCallback = function(pathX, pathY) {
-                path.push([pathX, pathY]);
-            }
-            astar.compute(x, y, pathCallback);
+        // for (var key in actors) {
+        //     var actor = actors[key];
+        //     var parts = key2pos(key);
+        //     var x = parts.x, y = parts.y;
+        //     var path = [];
+        //     astar.compute(x, y, function(pathX, pathY) { path.push([pathX, pathY]); });
 
-            path.shift(); /* remove the actor's position */
-            if (path.length == 0 || path.length == 1) {
-                // This actor is next to the player.
-                if (pos2key(newPlayerX, newPlayerY) === key) {
-                    // Don't move the player
-                    newPlayerY = oldPlayerX;
-                    newPlayerY = oldPlayerY;
-                    player.hp -= actor.damage;
-                    actor.hp -= player.damage
-                    ga('send', 'event', 'turn', 'attack', self.turn+"-"+actor.type);
-                }
+        //     path.shift(); /* remove the actor's position */
+        //     if (path.length === 0 || path.length === 1) {
+        //         // This actor is next to the player.
+        //         if (pos2key(newPlayerX, newPlayerY) === key) {
+        //             // Don't move the player
+        //             newPlayerY = oldPlayerX;
+        //             newPlayerY = oldPlayerY;
+        //             player.hp -= actor.damage;
+        //             actor.hp -= player.damage;
+        //             ga('send', 'event', 'turn', 'attack', self.turn+"-"+actor.type);
+        //         }
 
-                if (player.hp <= 0) {
-                    self.props.onGameEnd(false);
-                }
-                if (actor.hp > 0) {
-                    newActors[key] = actor;
-                }
-            } else if (path.length > 10) {
-                var neighbors = [[-1,0], [1,0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]];
-                neighbors = neighbors.map(function(offset) {
-                    var possibleX = x+offset[0], possibleY = y+offset[1];
-                    if (self.isPassable(possibleX, possibleY)) {
-                        return pos2key(possibleX, possibleY);
-                    }
-                    return pos2key(x, y);
-                });
+        //         if (player.hp <= 0) {
+        //             self.props.onGameEnd(false);
+        //         }
+        //         if (actor.hp > 0) {
+        //             newActors[key] = actor;
+        //         }
+        //     } else if (path.length > 10) {
+        //         var neighbors = [[-1,0], [1,0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]];
+        //         neighbors = neighbors.map(function(offset) {
+        //             var possibleX = x+offset[0], possibleY = y+offset[1];
+        //             if (self.isPassable(possibleX, possibleY)) {
+        //                 return pos2key(possibleX, possibleY);
+        //             }
+        //             return pos2key(x, y);
+        //         });
 
-                var index = Math.floor(ROT.RNG.getUniform() * neighbors.length);
-                var newKey = neighbors.splice(index, 1)[0];
-                newActors[newKey] = actor;
-                freeTiles.push(key); // Release the tile the actor was on.
-                ga('send', 'event', 'turn', 'normal', self.turn);
-            } else {
-                x = path[0][0];
-                y = path[0][1];
-                var newKey = pos2key(x, y);
-                newActors[newKey] = actor;
-                freeTiles.push(key); // Release the tile the actor was on.
-                ga('send', 'event', 'turn', 'chased', self.turn+"-"+actor.type);
-            }
-        }
+        //         var index = Math.floor(ROT.RNG.getUniform() * neighbors.length);
+        //         var newKey = neighbors.splice(index, 1)[0];
+        //         newActors[newKey] = actor;
+        //         freeTiles.push(key); // Release the tile the actor was on.
+        //         ga('send', 'event', 'turn', 'normal', self.turn);
+        //     } else {
+        //         x = path[0][0];
+        //         y = path[0][1];
+        //         var newKey = pos2key(x, y);
+        //         newActors[newKey] = actor;
+        //         freeTiles.push(key); // Release the tile the actor was on.
+        //         ga('send', 'event', 'turn', 'chased', self.turn+"-"+actor.type);
+        //     }
+        // }
 
         player.x = newPlayerX;
         player.y = newPlayerY;
@@ -151,6 +157,7 @@ var TileMap = React.createClass({
 
         this.setState({
             player: player,
+            camera: camera,
             actors: newActors,
             freeTiles: freeTiles
         });
@@ -160,7 +167,7 @@ var TileMap = React.createClass({
         var self = this, props = self.props,
             tileX = props.width/props.tileWidth,
             tileY = props.height/props.tileHeight,
-            tiles = {}, visibleTiles = {}, actors = {},
+            tiles = {}, actors = {},
             tileset = this.tileset,
             tileMap = new ROT.Map.Digger(tileX, tileY, {
                 roomWidth: [5, 10],
@@ -198,30 +205,7 @@ var TileMap = React.createClass({
         var posX = parseInt(position[0]);
         var posY = parseInt(position[1]);
 
-        // Compute the FOV of the player
-        var lightPasses = function(x, y) {
-            // var key =pos2key(x,y);
-            // var tile = tiles[key];
-            // return (tile && tile !== self.tileset[1]);
-            return ((x < posX + props.fov) && (y < posY + props.fov))
-                || ((x > posX - props.fov) && (y > posY - props.fov));
-        }
-
-        var fov = new ROT.FOV.PreciseShadowcasting(lightPasses);
-
-        /* output callback */
-        fov.compute(posX, posY, props.fov, function (x, y, r, visibility) {
-            // var ch = (r ? "" : "@");
-            // var color = (data[x+","+y] ? "#aa0": "#660");
-            // display.draw(x, y, ch, "#fff", color);
-
-            var key = pos2key(x, y);
-            var symbol = "";
-            if (r === 0) symbol = "";
-            else if (key in actors) symbol = actors[key].type;
-            else symbol = tiles[key];
-            visibleTiles[key] = symbol;
-        });
+        var camera = {x: posX, y: posY};
 
         // Find the furthest free tile and put the goal there
         var passableCallback = function(x, y) {
@@ -249,9 +233,9 @@ var TileMap = React.createClass({
         return {
             tiles: tiles,
             freeTiles: freeTiles,
-            visibleTiles: visibleTiles,
-            rooms: rooms, 
+            rooms: rooms,
             actors: actors,
+            camera: camera,
             player: {
                 x: posX,
                 y: posY
@@ -267,73 +251,41 @@ var TileMap = React.createClass({
         this.setState({player: newPlayer});
     },
     renderTiles: function() {
-        var props = this.props,
+        var props = this.props, state = this.state;
             tileWidth = props.tileWidth,
             tileHeight = props.tileHeight,
             tileY = props.height/tileHeight,
-            tiles = this.state.visibleTiles;
+            tiles = state.tiles,
+            player = state.player,
+            camera = state.camera,
+            actors = state.actors;
 
         var tileEntities = [];
-        for (var key in tiles) {
-            var parts = key.split(",");
-            var x = parseInt(parts[0]), y = parseInt(parts[1]);
-            var tile = tiles[key];
-            var color = (tile=="FF")? "#00f7fb" : (HackeRL.DEBUG? "green": "#fff");
-            tileEntities.push(
-                <Entity key={"tile"+x+"-"+y}
-                        width={tileWidth+"px"}
-                        height={tileHeight+"px"}
-                        x={x*tileWidth}
-                        y={y*tileHeight}
-                        sprite={color}
-                >
-                    <span style={{color: "#111111"}}>{tiles[key]}</span>
-                </Entity>
-            )
+        for (var i=0; i < props.fov*2; i++) {
+            for (var j=0; j < props.fov*2; j++) {
+                var screenX = i+(camera.x - props.fov);
+                var screenY = j+(camera.y - props.fov);
+                var key = pos2key(screenX, screenY);
+                var symbol = "";
+                if (screenX === player.x && screenY === player.y) symbol = "";
+                else if (key in actors) symbol = actors[key].type;
+                else symbol = tiles[key];
+                var color = (symbol=="FF")? "#00f7fb" : (HackeRL.DEBUG? "green": "#fff");
+                tileEntities.push(
+                    <Entity key={"tile"+(screenX)+"-"+(screenY)} className={symbol === ""? "player" : ""}
+                            width={tileWidth+"px"}
+                            height={tileHeight+"px"}
+                            x={i*tileWidth}
+                            y={j*tileHeight}
+                            sprite={symbol===""? "#aaa": color}
+                    >
+                        <span style={{color: "#111111"}}>{symbol}</span>
+                    </Entity>
+                )
+            }
         }
 
         return tileEntities;
-    },
-    renderPlayer: function() {
-        var player = this.state.player, props = this.props;
-        return React.Children.map(this.props.children, function(child) {
-            return (
-                <Entity key="player" className="player"
-                        x={player.x*props.tileWidth}
-                        y={player.y*props.tileHeight}
-                        width={props.tileWidth}
-                        height={props.tileHeight}
-                        sprite="#aaa"
-                >
-                </Entity>
-            );
-        });
-    },
-    renderActors: function() {
-        var props = this.props,
-            tileWidth = props.tileWidth,
-            tileHeight = props.tileHeight,
-            tileY = props.height/tileHeight,
-            actors = this.state.actors;
-
-        var actorEntities = [];
-        for (var key in actors) {
-            var parts = key.split(",");
-            var x = parts[0], y = parts[1];
-            actorEntities.push(
-                <Entity key={"actor"+x+"-"+y}
-                        width={tileWidth+"px"}
-                        height={tileHeight+"px"}
-                        x={x*tileWidth}
-                        y={y*tileHeight}
-                        sprite="#fff"
-                >
-                    <span style={{color: "red"}}>{actors[key].type}</span>
-                </Entity>
-            )
-        }
-        // return actorEntities;
-        return false;
     },
     render: function() {
         var state = this.state, player = state.player, props = this.props;
@@ -348,8 +300,6 @@ var TileMap = React.createClass({
                         onActionDown={this.handleTurn.bind(this, 0, 1)}
                         onActionDebug={props.onDebug}
                 >
-                    {this.renderPlayer()}
-                    {this.renderActors()}
                     <Entity key="goal"
                             width={props.tileWidth+"px"}
                             height={props.tileHeight+"px"}
