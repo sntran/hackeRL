@@ -289,9 +289,11 @@ var TileMap = React.createClass({
             else if (key in actors) symbol = actors[key].type;
             else symbol = tiles[key];
             var color = (symbol=="FF")? "#00f7fb" : (HackeRL.DEBUG? "green": "#fff");
+
+            var entityWdith = symbol === ""? 22 : tileWidth;
             entities.push(
                 <Entity key={"tile"+(mapX)+"-"+(mapY)} className={symbol === ""? "player" : ""}
-                        width={tileWidth+"px"}
+                        width={entityWdith+"px"}
                         height={tileHeight+"px"}
                         x={screenX*tileWidth}
                         y={screenY*tileHeight}
@@ -307,7 +309,7 @@ var TileMap = React.createClass({
     render: function() {
         var state = this.state, player = state.player, props = this.props;
         return (
-            <Entity key="memoryMap" sprite="#111111" css={{overflow: "hidden", fontSize: "20px"}}>
+            <Entity key="memoryMap" css={{overflow: "hidden", fontSize: "20px"}}>
                 {this.renderTiles()}
 
                 <Entity key="actorsLayer" filter={false} ref="actorsLayer"
