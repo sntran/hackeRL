@@ -93,7 +93,11 @@ var HackeRL = React.createClass({
                 os: null,
                 cpu: null,
                 mem: null,
-                hdd: null
+                hdd: null,
+                usage: {
+                    cpu: [0],
+                    mem: [0]
+                }
             },
             debugging: false,
             scene: "opening", 
@@ -281,6 +285,24 @@ var HackeRL = React.createClass({
     },
     updatePlayer: function(newHp) {
         var player = this.state.player;
+
+        if (newHp > player.hp) {
+            // Player is attacked
+            var maxDmg = 350;
+            player.usage.cpu.push((newHp-player.hp)/maxDmg);
+        } else {
+            player.usage.cpu.push(0);
+        }
+        // Only keep 100 records
+        if (player.usage.cpu.length > 100) {
+            player.usage.cpu = player.usage.cpu.slice(-100);
+        }
+
+        player.usage.mem.push(newHp/(player.mem*1024));
+        if (player.usage.mem.length > 100) {
+            player.usage.mem = player.usage.mem.slice(-100);
+        }
+
         player.hp = newHp;
         this.setState({player: player});
     },
@@ -310,6 +332,20 @@ var HackeRL = React.createClass({
         var dialog = state.dialog.map(function (msg, i) {
             return "<p>"+getTime()+" "+msg+"</p>";
         }.bind(this)).join("");
+
+        var maxWidthGraph = 100,
+            maxHeightGraph = 30;
+        var cpuGraphBars = player.usage.cpu.map(function(cpuUsage) {
+            return '<span class="bar" style="height:'+((1-cpuUsage)*maxHeightGraph)+'px"></span>';
+        }).join("");
+        cpuGraphBars = cpuGraphBars +
+            '<span class="bar" style="width:'+(maxWidthGraph-player.usage.cpu.length)+'px; height:'+maxHeightGraph+'px;"></span>';
+
+        var memGraphBars = player.usage.mem.map(function(memUsage) {
+            return '<span class="bar" style="height:'+((1-memUsage)*maxHeightGraph)+'px"></span>';
+        }).join("");
+        memGraphBars = memGraphBars +
+            '<span class="bar" style="width:'+(maxWidthGraph-player.usage.mem.length)+'px; height:'+maxHeightGraph+'px;"></span>';
 
         var screenWidth = props.width;
         var screenHeight = props.height;
@@ -370,7 +406,13 @@ var HackeRL = React.createClass({
                     >
                         <h2>{player.os}</h2>
                         <p>CPU: {player.cpu}GHz</p>
+                        <div className="graph" dangerouslySetInnerHTML={{
+                            __html: cpuGraphBars
+                        }} />
                         <p>MEM: {player.hp + 12.3}MB / {player.mem}GB</p>
+                        <div className="graph" dangerouslySetInnerHTML={{
+                            __html: memGraphBars
+                        }} />
                         <p>Disk: {player.hdd}</p>
                         <h2>Processes</h2>
                         <ul>

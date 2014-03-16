@@ -81,3 +81,14 @@ ul {
 .tab {
     cursor: pointer;
 }
+
+.graph {
+    background-color:#0ff;
+    height:30px;
+    width: 100px;
+}
+.graph .bar {
+    float: left;
+    width: 1px;
+    background-color:#113;
+}
