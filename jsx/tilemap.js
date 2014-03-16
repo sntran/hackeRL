@@ -44,7 +44,7 @@ var ActorTemplates = {
 }
 
 var FileTemplates = [
-    function spawnEnemy() {
+    function spawnEnemy(onDone) {
         var state = this.state, player = state.player, rooms = state.rooms,
             freeTiles = state.freeTiles, actors = state.actors;
 
@@ -88,6 +88,43 @@ var FileTemplates = [
 
         this.setState({actors: actors, freeTiles: freeTiles}, function() {
             this.handleTurn(0, 0);
+            if (onDone) onDone(0);
+        }.bind(this));
+    },
+
+    function freezeRoom() {
+        var state = this.state, player = state.player, rooms = state.rooms,
+            freeTiles = state.freeTiles, actors = state.actors;
+
+        var x = player.x, y = player.y, currentRoom;
+        rooms.forEach(function(room) {
+            var left = room.getLeft(), top = room.getTop(),
+                right = room.getRight(), bottom = room.getBottom();
+            if (x > left && x < right && y > top && y < bottom) {
+                currentRoom = room;
+
+            }
+        });
+    },
+
+    function teleport(onDone) {
+        var state = this.state, player = state.player, freeTiles = state.freeTiles;
+        var camera = this.state.camera, width = this.props.width, height = this.props.height;
+        var index = "";
+        do {
+            index = Math.floor(ROT.RNG.getUniform() * freeTiles.length);
+        } while (freeTiles[index] === pos2key(player.x, player.y));
+
+        var newPos = key2pos(freeTiles.splice(index, 1)[0]);
+        player.x = newPos.x;
+        player.y = newPos.y;
+
+        camera.x = clamp(newPos.x, Math.floor(camera.width/2), width-Math.floor(camera.width/2));
+        camera.y = clamp(newPos.y, Math.floor(camera.height/2), height-Math.floor(camera.height/2));
+
+        this.setState({player: player, freeTiles: freeTiles, camera: camera}, function() {
+            this.handleTurn(0, 0);
+            if (onDone) onDone(0);
         }.bind(this));
     }
 ]
@@ -249,7 +286,9 @@ var TileMap = React.createClass({
                         delete mapFiles[key];
                     }
                     self.props.onUsageChange(player);
-                    this.setState({player: player, files: mapFiles})
+                    this.setState({player: player, files: mapFiles}, function() {
+                        this.handleTurn(0, 0);
+                    }.bind(this));
                 }
                 break;
             case 48: // 0
@@ -265,7 +304,13 @@ var TileMap = React.createClass({
                 var slot = keyCode - 48 - 1;
                 var file = player.files[slot];
                 if (file) {
-                    file.action();
+                    file.action(function (remainingUses) {
+                        if (remainingUses === 0) {
+                            player.files.splice(slot, 1);
+                            this.props.onUsageChange(player)
+                            this.setState({player: player});
+                        }
+                    }.bind(this));
                 }
                 break;
         }
