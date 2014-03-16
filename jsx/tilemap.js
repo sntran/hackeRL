@@ -52,35 +52,6 @@ var FileTemplates = [
         var index = Math.floor(ROT.RNG.getUniform() * freeTiles.length);
         var key = freeTiles.splice(index, 1)[0];
 
-        // var currentRoom;
-        // rooms.forEach(function(room) {
-        //     var left = room.getLeft(), top = room.getTop(),
-        //         right = room.getRight(), bottom = room.getBottom();
-        //     if (x > left && x < right && y > top && y < bottom) {
-        //         currentRoom = room;
-        //     }
-        // });
-
-        // var availables = [];
-        // if (currentRoom) {
-        //     // Player is in a room, get a random position from the rooms.
-        //     var left = currentRoom.getLeft(), top = currentRoom.getTop(),
-        //         right = currentRoom.getRight(), bottom = currentRoom.getBottom();
-
-        //     for (var i = left; i < right; i++) {
-        //         for (var j = top; j < bottom; j++) {
-        //             if (i === x && j === y) continue;
-        //             availables.push({x: i, y: j});
-        //         }
-        //     }
-        // } else {
-        //     // Player is in corridor or at door.
-        //     if (this.isPassable(x+1, y) && this.isPassable(x-1, y) {
-        //         // Horizontal corridor
-
-        //     }
-        // }
-
         var types = Object.keys(ActorTemplates);
         index = Math.floor(ROT.RNG.getUniform() * types.length);
         actors[key] = new Actor(types[index]);
@@ -88,11 +59,11 @@ var FileTemplates = [
 
         this.setState({actors: actors, freeTiles: freeTiles}, function() {
             this.handleTurn(0, 0);
-            if (onDone) onDone(0);
+            if (onDone) onDone(5);
         }.bind(this));
     },
 
-    function freezeRoom() {
+    function freezeRoom(onDone) {
         var state = this.state, player = state.player, rooms = state.rooms,
             freeTiles = state.freeTiles, actors = state.actors;
 
@@ -102,8 +73,20 @@ var FileTemplates = [
                 right = room.getRight(), bottom = room.getBottom();
             if (x > left && x < right && y > top && y < bottom) {
                 currentRoom = room;
-
+                for (var i = left; i <= right; i++) {
+                    for (var j = top; j <= bottom; j++) {
+                        var key = pos2key(i, j);
+                        if (key in actors) {
+                            console.log(actors[key].type, "is immobile");
+                            actors[key].movable = false;
+                        }
+                    }
+                }
             }
+        });
+        this.setState({actors: actors}, function() {
+            this.handleTurn(0, 0);
+            if (onDone) onDone(5);
         });
     },
 
@@ -124,7 +107,7 @@ var FileTemplates = [
 
         this.setState({player: player, freeTiles: freeTiles, camera: camera}, function() {
             this.handleTurn(0, 0);
-            if (onDone) onDone(0);
+            if (onDone) onDone(5);
         }.bind(this));
     }
 ]
@@ -135,6 +118,7 @@ var Actor = function(type) {
     this.type = type;
     this.hp = ActorTemplates[type].hp;
     this.damage = ActorTemplates[type].damage;
+    this.movable = true;
 }
 
 var TileMap = React.createClass({
@@ -196,7 +180,7 @@ var TileMap = React.createClass({
                 // This actor is next to the player.
                 if (pos2key(newPlayerX, newPlayerY) === key) {
                     // Don't move the player
-                    newPlayerY = oldPlayerX;
+                    newPlayerX = oldPlayerX;
                     newPlayerY = oldPlayerY;
                     // Player hits first
                     var playerDmg = randomIntFromInterval(player.damage-20, player.damage);
@@ -204,24 +188,31 @@ var TileMap = React.createClass({
                     actor.hp -= playerDmg;
 
                     if (actor.hp > 0) {
-                        // If enemy is still alive, player is attacked.
-                        var actorDmg = randomIntFromInterval(actor.damage-20, actor.damage);
-                        player.hp += actorDmg;
-                        console.log(actor.type, "hit player with", actorDmg, "damage.")
+                        if (actor.movable) {
+                            // If enemy is still alive, player is attacked.
+                            var actorDmg = randomIntFromInterval(actor.damage-20, actor.damage);
+                            player.hp += actorDmg;
+                            console.log(actor.type, "hit player with", actorDmg, "damage.")
+                        }
                         newActors[key] = actor;
                     }
                     ga('send', 'event', 'turn', 'attack', self.turn+"-"+actor.type);
-                } else {
+                } else if (actor.movable) {
+                    // Player is coming to the tile next to this actor.
                     var actorDmg = randomIntFromInterval(actor.damage-20, actor.damage);
                     player.hp += actorDmg;
                     console.log(actor.type, "hit player with", actorDmg, "damage.")
+                    newActors[key] = actor;
+                } else {
+                    // Can't move;
                     newActors[key] = actor;
                 }
 
                 if (player.hp > player.limit) {
                     self.props.onGameEnd(false);
                 }
-            } else if (path.length > 10) {
+            } else if (path.length > 10 && actor.movable) {
+                // Too far
                 var neighbors = [[-1,0], [1,0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]];
                 neighbors = neighbors.map(function(offset) {
                     var possibleX = x+offset[0], possibleY = y+offset[1];
@@ -236,13 +227,17 @@ var TileMap = React.createClass({
                 newActors[newKey] = actor;
                 freeTiles.push(key); // Release the tile the actor was on.
                 ga('send', 'event', 'turn', 'normal', self.turn);
-            } else {
+            } else if (actor.movable) {
+                // Chase the player
                 x = path[0][0];
                 y = path[0][1];
-                var newKey = pos2key(x, y);
+                var newKey = actor.movable? pos2key(x, y) : key;
                 newActors[newKey] = actor;
                 freeTiles.push(key); // Release the tile the actor was on.
                 ga('send', 'event', 'turn', 'chased', self.turn+"-"+actor.type);
+            } else {
+                // Can't move;
+                newActors[key] = actor;
             }
         }
         self.props.onUsageChange(player);
@@ -390,7 +385,7 @@ var TileMap = React.createClass({
         });
         var goal = key2pos(freeTiles.splice(furthestKeyIdx, 1)[0]);
 
-        var numberOfFiles = randomIntFromInterval(2, 7);
+        var numberOfFiles = randomIntFromInterval(1, FileTemplates.length);
         var files = {};
         while (numberOfFiles--) {
             var fileIdx = Math.floor(ROT.RNG.getUniform() * freeTiles.length);
@@ -402,7 +397,8 @@ var TileMap = React.createClass({
             var secondDigit = PossibleHex[hexIdx] + "";
             file.type = firstDigit + secondDigit;
             var actionIdx = Math.floor(ROT.RNG.getUniform() * FileTemplates.length)
-            file.action = FileTemplates[actionIdx].bind(this);
+            file.action = (FileTemplates.splice(actionIdx, 1)[0]).bind(this);
+            // file.action = FileTemplates[1].bind(this);
             files[fileKey] = file;
         }
 
