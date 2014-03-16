@@ -87,6 +87,8 @@ var HackeRL = React.createClass({
         return {
             player: {
                 name: nickname,
+                hp: 0,
+                damage: 0,
                 job: false,
                 os: null,
                 cpu: null,
@@ -206,6 +208,22 @@ var HackeRL = React.createClass({
                         var os = CONSTANTS.OSes[selection-1];
                         dialog.push(player.name + ": " + "I'm on " + os);
                         player.os = os
+                        switch (selection) {
+                            case 0: // "Linux"
+                                player.hp = Math.floor(200+ROT.RNG.getUniform() * 300); // from 200 to 300
+                                player.damage = Math.floor(50+ROT.RNG.getUniform() * 80);
+                                break;
+
+                            case 1: // "Mac"
+                                player.hp = Math.floor(300+ROT.RNG.getUniform() * 500);
+                                player.damage = Math.floor(30+ROT.RNG.getUniform() * 80);
+                                break;
+
+                            case 2: // "Windows"
+                                player.hp = Math.floor(300+ROT.RNG.getUniform() * 500);
+                                player.damage = Math.floor(30+ROT.RNG.getUniform() * 50);
+                                break;
+                        }
                         dialog.push(player.job.contact + ": " + CONSTANTS.messages["specsSelection"]);
                         ga('send', 'event', 'player', 'selectOS', os)
                     } else if (!player.cpu && !player.mem && !player.hdd) {
@@ -260,6 +278,11 @@ var HackeRL = React.createClass({
                 this.newGame();
                 break;
         }
+    },
+    updatePlayer: function(newHp) {
+        var player = this.state.player;
+        player.hp = newHp;
+        this.setState({player: player});
     },
     handleTerminal: function(e) {
         var self = this;
@@ -330,10 +353,12 @@ var HackeRL = React.createClass({
                                     enemies={10}
                                     onDebug={this.handleTerminal}
                                     onGameEnd={this.endGame}
+                                    onUsageChange={this.updatePlayer}
                             >
                                 <Entity key="player" className="player"
-                                        hp={15}
-                                        damage={1}
+                                        hp={player.hp}
+                                        limit={player.mem*1024}
+                                        damage={player.damage}
                                 >
                                 </Entity>
                             </TileMap>
@@ -345,8 +370,13 @@ var HackeRL = React.createClass({
                     >
                         <h2>{player.os}</h2>
                         <p>CPU: {player.cpu}GHz</p>
-                        <p>MEM: {player.mem}GB</p>
+                        <p>MEM: {player.hp + 12.3}MB / {player.mem}GB</p>
                         <p>Disk: {player.hdd}</p>
+                        <h2>Processes</h2>
+                        <ul>
+                            <li>pm: 12.3MB</li>
+                            <li>memed: {player.hp}MB</li>
+                        </ul>
                     </Window>
                 </Entity>
             </Entity>

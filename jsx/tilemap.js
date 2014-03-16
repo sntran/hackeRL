@@ -30,16 +30,16 @@ function clamp(number, min, max) {
 
 var ActorTemplates = {
     "☠": {
-        hp: 3,
-        damage: 1
+        hp: 120,
+        damage: 40
     },
     "☣": {
-        hp: 5,
-        damage: 2
+        hp: 150,
+        damage: 60
     },
     "[]": {
-        hp: 10,
-        damage: 5
+        hp: 250,
+        damage: 120
     }
 }
 
@@ -110,17 +110,21 @@ var TileMap = React.createClass({
                     // Don't move the player
                     newPlayerY = oldPlayerX;
                     newPlayerY = oldPlayerY;
-                    player.hp -= actor.damage;
-                    actor.hp -= player.damage;
+                    // Player hits first
+                    actor.hp -= Math.floor(player.damage-20 + ROT.RNG.getUniform() * player.damage);
+
+                    if (actor.hp > 0) {
+                        // If enemy is still alive, player is attacked.
+                        player.hp += Math.floor(actor.damage-20 + ROT.RNG.getUniform() * actor.damage);
+                        newActors[key] = actor;
+                    }
                     ga('send', 'event', 'turn', 'attack', self.turn+"-"+actor.type);
                 }
 
-                if (player.hp <= 0) {
+                if (player.hp > player.limit) {
                     self.props.onGameEnd(false);
                 }
-                if (actor.hp > 0) {
-                    newActors[key] = actor;
-                }
+                self.props.onUsageChange(player.hp);
             } else if (path.length > 10) {
                 var neighbors = [[-1,0], [1,0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]];
                 neighbors = neighbors.map(function(offset) {
