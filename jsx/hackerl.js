@@ -210,18 +210,18 @@ var HackeRL = React.createClass({
                         player.os = os
                         switch (selection) {
                             case 0: // "Linux"
-                                player.hp = Math.floor(200+ROT.RNG.getUniform() * 300); // from 200 to 300
-                                player.damage = Math.floor(50+ROT.RNG.getUniform() * 80);
+                                player.hp = randomIntFromInterval(200, 300); // from 200 to 300
+                                player.damage = randomIntFromInterval(50, 80);
                                 break;
 
                             case 1: // "Mac"
-                                player.hp = Math.floor(300+ROT.RNG.getUniform() * 500);
-                                player.damage = Math.floor(30+ROT.RNG.getUniform() * 80);
+                                player.hp = randomIntFromInterval(300, 500);
+                                player.damage = randomIntFromInterval(30, 80);
                                 break;
 
                             case 2: // "Windows"
-                                player.hp = Math.floor(300+ROT.RNG.getUniform() * 500);
-                                player.damage = Math.floor(30+ROT.RNG.getUniform() * 50);
+                                player.hp = randomIntFromInterval(300, 500);
+                                player.damage = randomIntFromInterval(30, 50);
                                 break;
                         }
                         dialog.push(player.job.contact + ": " + CONSTANTS.messages["specsSelection"]);

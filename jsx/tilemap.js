@@ -31,15 +31,15 @@ function clamp(number, min, max) {
 var ActorTemplates = {
     "☠": {
         hp: 120,
-        damage: 40
+        damage: 140
     },
     "☣": {
-        hp: 150,
-        damage: 60
+        hp: 250,
+        damage: 260
     },
     "[]": {
-        hp: 250,
-        damage: 120
+        hp: 350,
+        damage: 320
     }
 }
 
@@ -111,11 +111,15 @@ var TileMap = React.createClass({
                     newPlayerY = oldPlayerX;
                     newPlayerY = oldPlayerY;
                     // Player hits first
-                    actor.hp -= Math.floor(player.damage-20 + ROT.RNG.getUniform() * player.damage);
+                    var playerDmg = randomIntFromInterval(player.damage-20, player.damage);
+                    console.log("Player hit", actor.type, "with", playerDmg, "damage.");
+                    actor.hp -= playerDmg;
 
                     if (actor.hp > 0) {
                         // If enemy is still alive, player is attacked.
-                        player.hp += Math.floor(actor.damage-20 + ROT.RNG.getUniform() * actor.damage);
+                        var actorDmg = randomIntFromInterval(actor.damage-20, actor.damage);
+                        player.hp += actorDmg;
+                        console.log(actor.type, "hit player with", actorDmg, "damage.")
                         newActors[key] = actor;
                     }
                     ga('send', 'event', 'turn', 'attack', self.turn+"-"+actor.type);
