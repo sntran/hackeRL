@@ -12,7 +12,7 @@ var logo = "\n"+
 "|__/  |__/|  $$\________/  \_______/|__/  \__/ \_______/|__/  |__/|________/\n"+
 "           \  $$$   /$$$                                                    \n"+
 "            \_  $$$$$$_/                                                    \n"+
-"              \______/  v0.9.0                                              \n"+
+"              \______/  v0.11.4                                              \n"+
 "\n";
 
 var CONSTANTS = {};
@@ -89,6 +89,7 @@ var HackeRL = React.createClass({
                 name: nickname,
                 hp: 0,
                 damage: 0,
+                files: [],
                 job: false,
                 os: null,
                 cpu: null,
@@ -105,8 +106,10 @@ var HackeRL = React.createClass({
                 logo,
                 "== Connected to server.",
                 "== Changes log:",
-                "== * Camera to reduce render",
-                "== * Fixed various bugs.",
+                "== * Add random files on map.",
+                "== * Collect file by X key, execute by the numeric key.",
+                "== * Collected files are showed on System Manager.",
+                "== * File that spawns enemy on being executed.",
                 "== -",
                 "== - Welcome to h@ckeRL " + nickname + ".",
                 "== You were assigned an auto-generated nickname. Please register a new nickname via /nick newnickname, or identify via /msg NickServ identify <password>."
@@ -291,8 +294,10 @@ var HackeRL = React.createClass({
                 break;
         }
     },
-    updatePlayer: function(newHp) {
+    updatePlayer: function(playerStats) {
+        var newHp = playerStats.hp;
         var player = this.state.player;
+        player.files = playerStats.files;
 
         if (newHp > player.hp) {
             // Player is attacked
@@ -361,6 +366,10 @@ var HackeRL = React.createClass({
         var mapWidth = props.width;
         var mapHeight = props.height;
 
+        var files = player.files.map(function (file) {
+            return <li>{file.type}</li>;
+        });
+
         return (
             <Entity key="game" width={screenWidth} height={screenHeight} filter={state.scene+"Scene"}>
                 
@@ -408,7 +417,7 @@ var HackeRL = React.createClass({
                             </TileMap>
                         </Entity>
                     </Window>
-                    <Window key="ProcessManager" x={editorWidth} width={screenWidth-editorWidth} height={screenHeight} 
+                    <Window key="SystemManager" x={editorWidth} width={screenWidth-editorWidth} height={screenHeight} 
                             onMinimize={function() {}}
                             onClose={function() {}}
                     >
@@ -426,6 +435,15 @@ var HackeRL = React.createClass({
                         <ul>
                             <li>pm: 12.3MB</li>
                             <li>memed: {player.hp}MB</li>
+                        </ul>
+                        <h2>Files</h2>
+                        <ol>
+                            {files}
+                        </ol>
+                        <h2>Hotkeys</h2>
+                        <ul>
+                            <li>C: Copy</li>
+                            <li>X: Cut</li>
                         </ul>
                     </Window>
                 </Entity>

@@ -43,6 +43,57 @@ var ActorTemplates = {
     }
 }
 
+var FileTemplates = [
+    function spawnEnemy() {
+        var state = this.state, player = state.player, rooms = state.rooms,
+            freeTiles = state.freeTiles, actors = state.actors;
+
+        var x = player.x, y = player.y;
+        var index = Math.floor(ROT.RNG.getUniform() * freeTiles.length);
+        var key = freeTiles.splice(index, 1)[0];
+
+        // var currentRoom;
+        // rooms.forEach(function(room) {
+        //     var left = room.getLeft(), top = room.getTop(),
+        //         right = room.getRight(), bottom = room.getBottom();
+        //     if (x > left && x < right && y > top && y < bottom) {
+        //         currentRoom = room;
+        //     }
+        // });
+
+        // var availables = [];
+        // if (currentRoom) {
+        //     // Player is in a room, get a random position from the rooms.
+        //     var left = currentRoom.getLeft(), top = currentRoom.getTop(),
+        //         right = currentRoom.getRight(), bottom = currentRoom.getBottom();
+
+        //     for (var i = left; i < right; i++) {
+        //         for (var j = top; j < bottom; j++) {
+        //             if (i === x && j === y) continue;
+        //             availables.push({x: i, y: j});
+        //         }
+        //     }
+        // } else {
+        //     // Player is in corridor or at door.
+        //     if (this.isPassable(x+1, y) && this.isPassable(x-1, y) {
+        //         // Horizontal corridor
+
+        //     }
+        // }
+
+        var types = Object.keys(ActorTemplates);
+        index = Math.floor(ROT.RNG.getUniform() * types.length);
+        actors[key] = new Actor(types[index]);
+        console.log("Spawned", actors[key].type, "at", key);
+
+        this.setState({actors: actors, freeTiles: freeTiles}, function() {
+            this.handleTurn(0, 0);
+        }.bind(this));
+    }
+]
+
+var PossibleHex = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E"];
+
 var Actor = function(type) {
     this.type = type;
     this.hp = ActorTemplates[type].hp;
@@ -152,7 +203,7 @@ var TileMap = React.createClass({
                 ga('send', 'event', 'turn', 'chased', self.turn+"-"+actor.type);
             }
         }
-        self.props.onUsageChange(player.hp);
+        self.props.onUsageChange(player);
 
         player.x = newPlayerX;
         player.y = newPlayerY;
@@ -180,6 +231,39 @@ var TileMap = React.createClass({
             actors: newActors,
             freeTiles: freeTiles
         });
+    },
+    handleHotKey: function(keyCode) {
+        var player = this.state.player, mapFiles = this.state.files;
+        switch (keyCode) {
+            case 67: // C
+            case 88: // X
+                var key = pos2key(player.x, player.y);
+                if (key in mapFiles) {
+                    player.files.push(mapFiles[key]);
+                    if (keyCode === 88) {
+                        delete mapFiles[key];
+                    }
+                    self.props.onUsageChange(player);
+                    this.setState({player: player, files: mapFiles})
+                }
+                break;
+            case 48: // 0
+            case 49: // 1
+            case 50: // 2
+            case 51: // 3
+            case 52: // 4
+            case 53: // 5
+            case 54: // 6
+            case 55: // 7
+            case 56: // 8
+            case 57: // 9
+                var slot = keyCode - 48 - 1;
+                var file = player.files[slot];
+                if (file) {
+                    file.action();
+                }
+                break;
+        }
     },
     getInitialState: function() {
         this.turn = 0;
@@ -256,6 +340,22 @@ var TileMap = React.createClass({
         });
         var goal = key2pos(freeTiles.splice(furthestKeyIdx, 1)[0]);
 
+        var numberOfFiles = randomIntFromInterval(2, 7);
+        var files = {};
+        while (numberOfFiles--) {
+            var fileIdx = Math.floor(ROT.RNG.getUniform() * freeTiles.length);
+            var fileKey = freeTiles.splice(fileIdx, 1)[0];
+            var file = key2pos(fileKey);
+            var hexIdx = Math.floor(ROT.RNG.getUniform() * PossibleHex.length);
+            var firstDigit = PossibleHex[hexIdx] + "";
+            hexIdx = Math.floor(ROT.RNG.getUniform() * PossibleHex.length);
+            var secondDigit = PossibleHex[hexIdx] + "";
+            file.type = firstDigit + secondDigit;
+            var actionIdx = Math.floor(ROT.RNG.getUniform() * FileTemplates.length)
+            file.action = FileTemplates[actionIdx].bind(this);
+            files[fileKey] = file;
+        }
+
         return {
             tiles: tiles,
             freeTiles: freeTiles,
@@ -264,9 +364,11 @@ var TileMap = React.createClass({
             camera: camera,
             player: {
                 x: posX,
-                y: posY
+                y: posY,
+                files: []
             },
-            goal: goal
+            goal: goal,
+            files: files,
         };
     },
     componentWillMount: function() {
@@ -284,6 +386,7 @@ var TileMap = React.createClass({
             tiles = state.tiles,
             player = state.player,
             goal = state.goal,
+            files = state.files,
             camera = state.camera,
             actors = state.actors;
 
@@ -295,6 +398,7 @@ var TileMap = React.createClass({
             if (mapX === player.x && mapY === player.y) symbol = "";
             else if (mapX === goal.x && mapY === goal.y) symbol = "✉";
             else if (key in actors) symbol = actors[key].type;
+            else if (key in files) symbol = files[key].type;
             else symbol = tiles[key];
             var color = (symbol=="FF")? "#00f7fb" : (HackeRL.DEBUG? "green": "#fff");
 
@@ -307,7 +411,10 @@ var TileMap = React.createClass({
                         y={screenY*tileHeight}
                         sprite={symbol===""? "#aaa": color}
                 >
-                    <span style={{color: "#111111"}}>{symbol}</span>
+                    <span style={{
+                        color: (symbol in ActorTemplates)? "red" :
+                                (symbol == "00" || symbol == "FF")? "#111111" : "blue"
+                    }}>{symbol}</span>
                 </Entity>
             )
         });
@@ -326,6 +433,7 @@ var TileMap = React.createClass({
                         onActionUp={this.handleTurn.bind(this, 0, -1)}
                         onActionDown={this.handleTurn.bind(this, 0, 1)}
                         onActionDebug={props.onDebug}
+                        onKey={this.handleHotKey}
                 >
                 </Entity>
             </Entity>

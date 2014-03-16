@@ -108,6 +108,8 @@ var Entity = React.createClass({
         var action = this.props.actions[code];
         if (action && this.props["onAction"+action]) {
             this.props["onAction"+action]();
+        } else if (this.props.onKey) {
+            this.props.onKey(code);
         }
     },
     handleTouch: function(e) {
