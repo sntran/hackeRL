@@ -174,6 +174,11 @@ var TileMap = React.createClass({
                         newActors[key] = actor;
                     }
                     ga('send', 'event', 'turn', 'attack', self.turn+"-"+actor.type);
+                } else {
+                    var actorDmg = randomIntFromInterval(actor.damage-20, actor.damage);
+                    player.hp += actorDmg;
+                    console.log(actor.type, "hit player with", actorDmg, "damage.")
+                    newActors[key] = actor;
                 }
 
                 if (player.hp > player.limit) {
