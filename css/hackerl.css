@@ -1,0 +1,83 @@
+body {
+    font-family: 'Droid Sans Mono', sans-serif;
+}
+
+ul {
+    padding-left: 0;
+}
+
+.player {
+    -webkit-animation: blink 1s infinite steps(1, start);
+       -moz-animation: blink 1s infinite steps(1, start);
+        -ms-animation: blink 1s infinite steps(1, start);
+            animation: blink 1s infinite steps(1, start);
+}
+
+.scene-enter {
+    opacity: 0.01;
+    -webkit-transition: opacity .5s ease-in;
+    -moz-transition: opacity .5s ease-in;
+    -ms-transition: opacity .5s ease-in;
+    -o-transition: opacity .5s ease-in;
+    transition: opacity .5s ease-in;
+}
+.scene-enter.scene-enter-active {
+    opacity: 1;
+}
+
+@keyframes blink {
+  0%, 100% {
+        background-color: #000;
+        color: #aaa;
+  }
+  50% {
+        background-color: #bbb; /* not #aaa because it's seem there is Google Chrome bug */
+        color: #000;
+  }
+}
+@-webkit-keyframes blink {
+  0%, 100% {
+        background-color: #000;
+        color: #aaa;
+  }
+  50% {
+        background-color: #bbb;
+        color: #000;
+  }
+}
+@-ms-keyframes blink {
+  0%, 100% {
+        background-color: #000;
+        color: #aaa;
+  }
+  50% {
+        background-color: #bbb;
+        color: #000;
+  }
+}
+@-moz-keyframes blink {
+  0%, 100% {
+        background-color: #000;
+        color: #aaa;
+  }
+  50% {
+        background-color: #bbb;
+        color: #000;
+  }
+}
+
+ul {
+    list-style-position: inside;
+}
+
+.chat-room {
+    overflow: hidden;
+}
+
+.chat-entries {
+    overflow: scroll;
+}
+
+.tab {
+    cursor: pointer;
+}
