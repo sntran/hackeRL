@@ -128,7 +128,6 @@ var TileMap = React.createClass({
                 if (player.hp > player.limit) {
                     self.props.onGameEnd(false);
                 }
-                self.props.onUsageChange(player.hp);
             } else if (path.length > 10) {
                 var neighbors = [[-1,0], [1,0], [0, 1], [0, -1], [1, 1], [-1, -1], [1, -1], [-1, 1]];
                 neighbors = neighbors.map(function(offset) {
@@ -153,6 +152,7 @@ var TileMap = React.createClass({
                 ga('send', 'event', 'turn', 'chased', self.turn+"-"+actor.type);
             }
         }
+        self.props.onUsageChange(player.hp);
 
         player.x = newPlayerX;
         player.y = newPlayerY;
