@@ -35,11 +35,11 @@ var ActorTemplates = {
     },
     "☣": {
         hp: 250,
-        damage: 260
+        damage: 180
     },
     "[]": {
         hp: 350,
-        damage: 320
+        damage: 220
     }
 }
 

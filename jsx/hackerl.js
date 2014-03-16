@@ -149,6 +149,14 @@ var HackeRL = React.createClass({
             systemMessages.push("== Private messages left for you from " + player.job.contact +": "+agentLastMsg);
             systemMessages.push(agentQuitMsg);
             player.job.contact = false;
+            player.os = null;
+            player.cpu = null;
+            player.mem = null;
+            player.hdd = null;
+            player.usage = {
+                cpu: [0],
+                mem: [0]
+            }
             this.setState({scene: "opening", dialog: dialog, systemMessages: systemMessages, player:player});
 
             window.setTimeout(function() {
@@ -291,7 +299,7 @@ var HackeRL = React.createClass({
             var maxDmg = 350;
             player.usage.cpu.push((newHp-player.hp)/maxDmg);
         } else {
-            player.usage.cpu.push(0);
+            player.usage.cpu.push(randomIntFromInterval(0, 2)/10);
         }
         // Only keep 100 records
         if (player.usage.cpu.length > 100) {
