@@ -48,7 +48,7 @@ CONSTANTS.messages = {
             "2. "+CONSTANTS.specs[1].cpu.name+", "+CONSTANTS.specs[1].mem.name+", "+CONSTANTS.specs[1].hdd.name+"<br />"+
             "3. "+CONSTANTS.specs[2].cpu.name+", "+CONSTANTS.specs[2].mem.name+", "+CONSTANTS.specs[2].hdd.name+"<br />"+
             "4. Not sure",
-    "goToMission": "All set. Off you go. Open your favorite tool and connect to it. I'll be waiting.",
+    "goToMission": "All set. Off you go. Use /connect with the info I gave you. I'll be waiting.",
 }
 
 function getTime() {
